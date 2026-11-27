@@ -1,7 +1,8 @@
 """Local-only simulator HTTP bridge. Run after building the C++ fixture."""
+import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
-from render import HERE, render
+from render import FIXTURE, HERE, render
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -9,6 +10,9 @@ class Handler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         if url.path == "/":
             self.respond((HERE / "index.html").read_bytes(), "text/html; charset=utf-8")
+        elif url.path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
         elif url.path == "/display.svg":
             params = parse_qs(url.query)
             try:
@@ -31,7 +35,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    if not (HERE / "build" / "fixture").is_file():
+    if not FIXTURE.is_file():
         raise SystemExit("Build the C++ fixture first; see simulator/README.md")
-    print("Open http://127.0.0.1:8765", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", 8765), Handler).serve_forever()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--port", type=int, default=8765, help="loopback port (default: 8765)")
+    args = parser.parse_args()
+    with ThreadingHTTPServer(("127.0.0.1", args.port), Handler) as server:
+        print(f"Open http://127.0.0.1:{server.server_port}", flush=True)
+        server.serve_forever()

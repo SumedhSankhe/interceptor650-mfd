@@ -25,6 +25,30 @@ python3 simulator/server.py
 
 Open http://127.0.0.1:8765 in a desktop browser. Use the selectors to change mode, telemetry fixture, navigation fixture and temperature units. The server is loopback-only. Stop with Ctrl-C.
 
+## Browser tests
+
+Build the fixture using the commands above, or use the native Windows build
+in the [V02 browser record](../docs/verification-v02-browser.md). From the
+repository root with Node.js and npm installed:
+
+```sh
+cd simulator
+npm ci
+npx playwright install chromium
+npm test
+```
+
+Playwright starts the loopback simulator on port 18765 and uses Chromium to
+interact with its real controls. Set `SIMULATOR_PYTHON` to a Python executable
+if needed, or `SIMULATOR_TEST_PORT` to use another port. To test an already
+running local instance, set `SIMULATOR_USE_RUNNING_SERVER=1` and match its
+`server.py --port` value with `SIMULATOR_TEST_PORT`.
+
+Set `SIMULATOR_SCREENSHOTS` to a directory to regenerate the PNG evidence.
+The [browser captures](screenshots/browser/) and the [V02 browser record](../docs/verification-v02-browser.md)
+show the tested states, visual observations and limitations. The browser
+dependencies are only required to develop or run this test suite.
+
 ## Architecture
 
 - `firmware/include/mfd/telemetry.hpp`: portable data model, source/quality validation, monotonic freshness and unit conversion.
@@ -35,10 +59,10 @@ Open http://127.0.0.1:8765 in a desktop browser. Use the selectors to change mod
 - `test_render.py`: 96 mode/fixture/unit combinations, invalid selectors and snapshot consistency.
 - `screenshots/`: reproducible 466 × 466 SVG outputs.
 
-## Validation record
+## Earlier Linux validation
 
 Local Linux: GCC 14.2.0, Python 3.13.5. Strict C++17 compilation and assertion executable passed; Python renderer suite passed all three test methods, including 96 combinations; local HTTP responses checked against renderer for all 96 combinations, Fahrenheit display and invalid-selector HTTP 400. Three SVG snapshots captured and rasterized to PNG for inspection. The browser environment blocked navigation, so interactive browser controls were not end-to-end tested; verify locally. No embedded build, real sensors, Bluetooth, GPS, or environmental tests run. No temperature or voltage alarm thresholds defined. V02 is partially addressed, not a hardware validation pass.
 
 ## Next
 
-Review visual hierarchy at actual 1.43-inch scale; run browser interaction locally. Add portable navigation state/decoder tests separately, then board-specific LVGL adaptation after exact module revision and vendor example are verified. No paid provider or permanent electrical design selected.
+Review visual hierarchy at actual 1.43-inch scale. Add portable navigation state/decoder tests separately, then board-specific LVGL adaptation after exact module revision and vendor example are verified. No paid provider or permanent electrical design selected.

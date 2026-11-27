@@ -1,6 +1,6 @@
 # Verification and validation plan
 
-All tests below are planned, not executed. Preserve empirical results in [diagnostic log](diagnostics.md) or dated test records. A failed gate blocks dependent installation/road use. Host test success is not hardware qualification. Do not invent voltage, current or temperature thresholds; establish them from verified specifications and measurements.
+The table defines the planned verification gates. The [V02 desktop browser record](verification-v02-browser.md) contains the host evidence collected to date. Preserve empirical results in [diagnostic log](diagnostics.md) or dated test records. A failed gate blocks dependent installation/road use. Host test success is not hardware qualification. Do not invent voltage, current or temperature thresholds; establish them from verified specifications and measurements.
 
 | ID | Stage | Test and expected evidence | Requirements / issues |
 |---|---|---|---|
