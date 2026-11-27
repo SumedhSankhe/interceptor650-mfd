@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interceptor 650 MFD simulator</title>
+<style>
+*{box-sizing:border-box}body{background:#171d24;color:#edf2f7;font:16px system-ui,sans-serif;margin:0;padding:32px}main{max-width:920px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{color:#a9b6c3;line-height:1.5}section{display:flex;flex-wrap:wrap;align-items:center;gap:32px}img{width:min(466px,100%);height:auto;display:block}form{flex:1;min-width:220px}label{display:block;margin:16px 0;color:#c4d0db}select{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;background:#242e38;border:1px solid #536270;border-radius:6px;font:inherit}small{color:#a9b6c3}#status{min-height:24px}
+</style>
+<main><h1>Interceptor 650 MFD · desktop simulator</h1><p>466 × 466 viewport · synthetic data only · no vehicle connection</p>
+<section><img id="display" width="466" height="466" alt="Simulated circular instrument"><form id="controls">
+<label>Display mode<select name="mode"><option value="telemetry">Telemetry</option><option value="navigation">Navigation</option><option value="hybrid">Hybrid</option></select></label>
+<label>Telemetry fixture<select name="scenario"><option value="normal">Normal</option><option value="stale">Stale (3 seconds)</option><option value="unsupported">Oil temperature unsupported</option><option value="disconnected">ECU disconnected</option></select></label>
+<label>Navigation fixture<select name="nav"><option value="active">Active · right turn</option><option value="rerouting">Rerouting</option><option value="disconnected">Phone disconnected</option><option value="stale">Stale guidance</option></select></label>
+<label>Temperature units<select name="unit"><option>C</option><option>F</option></select></label>
+<small>Controls are desktop-only. No real sensor thresholds, GPS or BLE transport.</small><p id="status" role="status"></p></form></section></main>
+<script>
+const form=document.querySelector('#controls'), display=document.querySelector('#display'), status=document.querySelector('#status');
+function update(){status.textContent='Updating fixture…';display.src='/display.svg?'+new URLSearchParams(new FormData(form));}
+display.addEventListener('load',()=>status.textContent='Fixture rendered');
+display.addEventListener('error',()=>status.textContent='Unable to render fixture');
+form.addEventListener('change',update);update();
+</script></html>
