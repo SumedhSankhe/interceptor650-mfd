@@ -27,3 +27,11 @@ Separate telemetry providers, display rendering, connection state and logging. M
 ## Validation
 
 Compare reported voltage against a multimeter at the battery; distinguish adapter and ECU supply. Verify temperature units and plausibility. Log timestamps only with confirmed clock/storage support. Handle power loss safely and ensure no parasitic drain when parked. Validate direct sunlight readability before riding. Auxiliary display is not safety-critical.
+
+## Phase 0 implementation boundaries
+
+[System architecture](../docs/architecture.md), [requirements](../docs/requirements.md), [BLE proposal](../docs/protocol/navigation-ble.md), [verification](../docs/verification.md).
+
+The phone is optional for telemetry; navigation requires a phone in the initial design. Candidate portable modules: domain samples and quality, telemetry provider, navigation decoder/state, state reducer, display adapter, bounded session logger and board HAL. These are proposed boundaries, not existing source files. Start with deterministic host fixtures and fake clock; then adopt exact vendor demo dependencies and pin versions. LVGL rendering must have a single owner. No hardware-specific build or CI test is yet present.
+
+Navigation provider remains undecided; see [research](../docs/research/navigation.md). The BLE state contract is provider-independent. Do not log proprietary map content or require a network connection for engine monitoring.
