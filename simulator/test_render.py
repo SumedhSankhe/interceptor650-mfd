@@ -30,6 +30,21 @@ class RenderTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 render(*args)
 
+        for options in ({"maneuver": "unknown"}, {"distance": "-1"}, {"distance": "1e3"},
+                        {"distance": "4294967296"}, {"exit_number": 256}, {"age": ""},
+                        {"distance_unit": "bad"}, {"connection": "bad"}):
+            with self.subTest(**options), self.assertRaises(ValueError):
+                render(**options)
+
+    def test_navigation_snapshot(self):
+        self.assertIn("ROUNDABOUT · EXIT 3", render("hybrid", maneuver="roundabout", exit_number=3))
+        self.assertIn("0 m", render("navigation", distance=0, age=2999))
+        self.assertIn("STALE", render("navigation", age=3000))
+        self.assertIn("ARRIVED", render("navigation", nav="arrived", age=10000))
+        self.assertNotIn("400 m", render("navigation", connection="waiting"))
+        self.assertIn("400 m", render("navigation", connection="reconnected"))
+        self.assertIn("1310 ft", render("hybrid", unit="C", distance_unit="imperial"))
+
     def test_committed_snapshots(self):
         for name, args in [("telemetry", ("telemetry", "normal", "active")),
                            ("hybrid", ("hybrid", "normal", "active")),

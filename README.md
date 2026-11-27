@@ -15,7 +15,7 @@ The expanded product includes optional Tripper-style phone-assisted turn-by-turn
 | Original Tripper diagnosis | P0 | Teardown and passive checks complete; powered test pending |
 | Oil temperature, intake air temperature, charging voltage | P0 | Candidate diagnostic data; not verified on target ECU |
 | ESP32 display and mock telemetry | P0 | Host model and simulator available; exact board revision and fit pending |
-| iOS navigation and hybrid display | P1 | Research/design; provider selection unresolved |
+| iOS navigation and hybrid display | P1 | Host decoder and hybrid simulator; phone transport and provider pending |
 | Local ride logging | P1 | Storage/clock validation pending |
 | GPS-tagged ride data, GPX and analytics | P2 | Proposed |
 | Phone-independent routing | P3 | Exploratory; not an initial deliverable |
@@ -60,7 +60,7 @@ The design is provisional. ECU protocol, input connector, module pinout, power c
 
 ## Development
 
-Clone the repository and start with the requirements and architecture. The Phase 0 documentation baseline is followed by a portable C++17 telemetry model and a local SVG display simulator. See [host build and test instructions](simulator/README.md). No board-specific configuration, embedded firmware executable, paid navigation SDK or CI build is present. The hardware branch of Phase 1 begins with the delivered board's vendor example. Record framework/toolchain versions and reproducible commands before adding CI. Hardware tests require the physical device and are not covered by host tests.
+Clone the repository and start with the requirements and architecture. The portable C++17 telemetry and navigation models drive a local SVG display simulator. See [host build and test instructions](simulator/README.md) and the [Phase 1B verification record](docs/verification-phase-1b.md). GitHub Actions runs host tests on pull requests and pushes to main. Hardware qualification begins with the delivered board's vendor example and requires the physical device. Provider selection remains open.
 
 Track work in [GitHub Issues](https://github.com/SumedhSankhe/interceptor650-mfd/issues). Use reviewable pull requests and preserve empirical records.
 

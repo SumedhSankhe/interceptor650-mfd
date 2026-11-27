@@ -52,7 +52,7 @@ Candidate implementation: C++ domain library with injected clock and transport i
 
 ## Data contracts
 
-Telemetry sample: metric identifier, numeric value in canonical SI or volts, source identifier, monotonic acquisition time, quality (valid, unsupported, stale, error, simulated). Preserve last valid value internally but show stale/missing explicitly. Wall clock optional and independently qualified. Navigation state is defined in [BLE proposal](protocol/navigation-ble.md). Phone and ECU connectivity separate.
+Telemetry sample: metric identifier, numeric value in canonical SI or volts, source identifier, monotonic acquisition time, quality (valid, unsupported, stale, error, simulated). Preserve last valid value internally but show stale/missing explicitly. Wall clock optional and independently qualified. Navigation state is defined in [BLE proposal](protocol/navigation-ble.md). Phone and ECU connectivity are separate. The host simulator feeds synthetic v1 packets into the portable navigation model and renders its snapshot alongside independent mock telemetry. The transport must bind packet callbacks to the current authorized link and count semantic rejections using the decoder result.
 
 ## Failure behavior
 

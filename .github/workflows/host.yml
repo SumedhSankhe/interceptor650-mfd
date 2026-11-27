@@ -1,0 +1,57 @@
+name: Host tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22.20.0'
+          package-manager-cache: false
+      - name: Record runner versions
+        run: |
+          g++ --version
+          python3 --version
+          node --version
+          npm --version
+      - name: Build and test C++17 and SVG renderer
+        run: |
+          mkdir -p simulator/build
+          flags=(-std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include)
+          g++ "${flags[@]}" firmware/test/telemetry_test.cpp -o simulator/build/telemetry_test
+          g++ "${flags[@]}" firmware/test/navigation_test.cpp -o simulator/build/navigation_test
+          g++ "${flags[@]}" simulator/fixture.cpp -o simulator/build/fixture
+          simulator/build/telemetry_test
+          simulator/build/navigation_test
+          python3 simulator/test_render.py
+      - name: Install browser dependencies
+        working-directory: simulator
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Test Chromium
+        id: chromium
+        working-directory: simulator
+        run: npm test
+      - name: Upload browser diagnostics
+        if: failure() && steps.chromium.outcome == 'failure'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: chromium-failures
+          path: |
+            simulator/build/browser-results/
+            simulator/build/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

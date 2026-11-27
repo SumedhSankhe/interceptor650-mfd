@@ -9,6 +9,12 @@ const labels = {
   scenario: 'Telemetry fixture',
   nav: 'Navigation fixture',
   unit: 'Temperature units',
+  connection: 'Navigation session',
+  maneuver: 'Maneuver',
+  exit_number: 'Roundabout exit',
+  distance: 'Distance (m)',
+  age: 'Elapsed since snapshot (ms)',
+  distance_unit: 'Distance units',
 };
 
 async function openSimulator(page, action = () => page.goto('/')) {
@@ -128,20 +134,7 @@ for (const [name, mode, scenario, nav] of evidence) {
     expect(alpha).toEqual([0, 0, 0, 0, 255]);
     await saveEvidence(page, name);
 
-    // Measure the loaded SVG with Chromium's actual font metrics.
-    await page.goto(display.url);
-    const outsideFace = await page.locator('svg g').evaluate((group) => {
-      const face = group.previousElementSibling;
-      const cx = face.cx.baseVal.value;
-      const cy = face.cy.baseVal.value;
-      const radius = face.r.baseVal.value;
-      return Array.from(group.children).filter((element) => {
-        const { x, y, width, height } = element.getBBox();
-        return [x, x + width].some((left) => [y, y + height]
-          .some((top) => Math.hypot(left - cx, top - cy) > radius));
-      }).map((element) => element.textContent || element.outerHTML);
-    });
-    expect(outsideFace).toEqual([]);
+    await checkGeometry(page, display);
   });
 }
 
@@ -157,4 +150,105 @@ test('fits a narrow viewport and keeps controls usable below the display', async
   expect(controls.x + controls.width).toBeLessThanOrEqual(image.x + image.width);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(280);
   await saveEvidence(page, 'narrow-hybrid');
+});
+
+async function input(page, name, value) {
+  return openSimulator(page, async () => {
+    const field = page.getByLabel(labels[name]);
+    await field.fill(String(value));
+    await field.press('Tab');
+  });
+}
+
+async function checkGeometry(page, display) {
+  // A separate page leaves the control state intact for subsequent interactions.
+  const svg = await page.context().newPage();
+  try {
+    await svg.goto(display.url);
+    const outsideFace = await svg.locator('svg g').evaluate((group) => {
+      const face = group.previousElementSibling;
+      const cx = face.cx.baseVal.value;
+      const cy = face.cy.baseVal.value;
+      const radius = face.r.baseVal.value;
+      return Array.from(group.children).filter((element) => {
+        const { x, y, width, height } = element.getBBox();
+        const style = getComputedStyle(element);
+        const stroke = style.stroke === 'none' ? 0 : parseFloat(style.strokeWidth) / 2;
+        const matrix = element.transform.baseVal.consolidate()?.matrix || new DOMMatrix();
+        return [x - stroke, x + width + stroke].some((left) => [y - stroke, y + height + stroke]
+          .some((top) => {
+            const point = new DOMPoint(left, top).matrixTransform(matrix);
+            return Math.hypot(point.x - cx, point.y - cy) > radius;
+          }));
+      }).map((element) => element.textContent || element.outerHTML);
+    });
+    expect(outsideFace).toEqual([]);
+  } finally {
+    await svg.close();
+  }
+}
+
+const maneuvers = [
+  ['straight', 'STRAIGHT AHEAD'],
+  ['left', 'TURN LEFT'],
+  ['right', 'TURN RIGHT'],
+  ['uturn', 'U-TURN'],
+  ['roundabout', 'ROUNDABOUT · EXIT 2'],
+  ['slight-left', 'SLIGHT LEFT'],
+  ['slight-right', 'SLIGHT RIGHT'],
+  ['keep-left', 'KEEP LEFT'],
+  ['keep-right', 'KEEP RIGHT'],
+];
+
+test('renders every maneuver with a distinct glyph and fits its labels inside the face', async ({ page }) => {
+  await openSimulator(page);
+  await select(page, 'mode', 'navigation');
+  const glyphs = new Set();
+  for (const [maneuver, caption] of maneuvers) {
+    const display = await select(page, 'maneuver', maneuver);
+    checkText(display.svg, [caption, '400 m']);
+    const glyph = display.svg.match(/<path d="[^"]+"(?: transform="[^"]+")? fill="none"/)?.[0];
+    expect(glyph).toBeTruthy();
+    expect(glyphs.has(glyph)).toBe(false);
+    glyphs.add(glyph);
+    await saveEvidence(page, 'maneuver-' + maneuver);
+    await checkGeometry(page, display);
+  }
+  let display = await input(page, 'distance', 4294967295);
+  checkText(display.svg, ['4294967 km', 'KEEP RIGHT']);
+  await checkGeometry(page, display);
+  await select(page, 'maneuver', 'roundabout');
+  display = await input(page, 'exit_number', 255);
+  checkText(display.svg, ['ROUNDABOUT · EXIT 255', '255']);
+  await checkGeometry(page, display);
+  checkText((await input(page, 'exit_number', 0)).svg, ['ROUNDABOUT'], ['ROUNDABOUT · EXIT 255', '255']);
+});
+
+test('uses independent distance and temperature units and accepts zero distance', async ({ page }) => {
+  await openSimulator(page);
+  await select(page, 'mode', 'hybrid');
+  checkText((await select(page, 'distance_unit', 'imperial')).svg, ['1310 ft', '108°C']);
+  checkText((await select(page, 'unit', 'F')).svg, ['1310 ft', '226°F']);
+  checkText((await input(page, 'distance', 2000)).svg, ['1.2 mi', '226°F']);
+  checkText((await select(page, 'distance_unit', 'metric')).svg, ['2.0 km', '226°F']);
+  checkText((await input(page, 'distance', 0)).svg, ['0 m', '226°F']);
+});
+
+test('clears obsolete guidance, replays a new session, and observes the timeout boundary', async ({ page }) => {
+  await openSimulator(page);
+  await select(page, 'mode', 'hybrid');
+  checkText((await input(page, 'age', 2999)).svg, ['400 m', '108°C']);
+  checkText((await input(page, 'age', 3000)).svg, ['NO GUIDANCE', 'STALE', '108°C'], ['400 m', 'TURN RIGHT']);
+  await saveEvidence(page, 'elapsed-stale');
+  checkText((await input(page, 'age', 0)).svg, ['400 m', '108°C']);
+  checkText((await select(page, 'nav', 'rerouting')).svg, ['REROUTING', '108°C'], ['400 m']);
+  checkText((await select(page, 'nav', 'arrived')).svg, ['ARRIVED', '108°C'], ['400 m', 'TURN RIGHT']);
+  await saveEvidence(page, 'arrived');
+  checkText((await select(page, 'nav', 'idle')).svg, ['IDLE'], ['400 m']);
+  checkText((await select(page, 'nav', 'unavailable')).svg, ['UNAVAILABLE'], ['400 m']);
+  checkText((await select(page, 'nav', 'disconnected')).svg, ['DISCONNECTED', '108°C'], ['400 m']);
+  await select(page, 'connection', 'waiting');
+  checkText((await select(page, 'nav', 'active')).svg, ['UNAVAILABLE', '108°C'], ['400 m']);
+  checkText((await select(page, 'connection', 'reconnected')).svg, ['400 m', 'TURN RIGHT', '108°C']);
+  checkText((await select(page, 'scenario', 'disconnected')).svg, ['400 m', 'MISSING'], ['108°C']);
 });

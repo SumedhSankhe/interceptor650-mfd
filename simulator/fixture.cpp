@@ -1,10 +1,18 @@
 #include "mfd/telemetry.hpp"
+#include "navigation_fixture.hpp"
 #include <iostream>
 #include <string>
 #include <iomanip>
 using namespace mfd;
 int main(int argc, char** argv) {
-    if (argc != 3) return 2;
+    if (argc != 9) return 2;
+    std::array<std::uint32_t, 6> inputs{};
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        if (!simulator::parse_number(argv[i + 3], inputs[i])) return 2;
+    }
+    NavigationSnapshot navigation;
+    if (!simulator::navigation_fixture({inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5]},
+                                       navigation)) return 2;
     const std::string scenario = argv[1], unit = argv[2];
     if ((scenario != "normal" && scenario != "stale" && scenario != "unsupported" && scenario != "disconnected") || (unit != "C" && unit != "F")) return 2;
     Telemetry model;
@@ -16,7 +24,7 @@ int main(int argc, char** argv) {
         if (scenario == "unsupported") model.ingest(Metric::Oil, {std::nullopt, Source::Mock, Quality::Unsupported, 1000}, now);
     }
     const char* quality[] = {"MISSING", "VALID", "SIMULATED", "UNSUPPORTED", "ERROR", "STALE"};
-    std::cout << '[';
+    std::cout << "{\"telemetry\":[";
     for (unsigned i = 0; i < 3; ++i) {
         auto r = model.get(static_cast<Metric>(i), now);
         if (i) std::cout << ',';
@@ -25,5 +33,7 @@ int main(int argc, char** argv) {
         else std::cout << "null";
         std::cout << ",\"quality\":\"" << quality[static_cast<unsigned>(r.quality)] << "\",\"source\":\"" << (r.source == Source::Mock ? "MOCK" : "NONE") << "\"}";
     }
-    std::cout << "]\n";
+    std::cout << "],\"navigation\":";
+    simulator::write_navigation(navigation);
+    std::cout << "}\n";
 }

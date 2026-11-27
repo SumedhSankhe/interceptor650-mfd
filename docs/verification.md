@@ -1,6 +1,6 @@
 # Verification and validation plan
 
-The table defines the planned verification gates. The [V02 desktop browser record](verification-v02-browser.md) contains the host evidence collected to date. Preserve empirical results in [diagnostic log](diagnostics.md) or dated test records. A failed gate blocks dependent installation/road use. Host test success is not hardware qualification. Do not invent voltage, current or temperature thresholds; establish them from verified specifications and measurements.
+The table defines the planned verification gates. Host evidence is recorded in the [V02 desktop browser record](verification-v02-browser.md) and the [Phase 1B V02/V05 record](verification-phase-1b.md). Preserve empirical results in [diagnostic log](diagnostics.md) or dated test records. A failed gate blocks dependent installation/road use. Host test success is not hardware qualification. Do not invent voltage, current or temperature thresholds; establish them from verified specifications and measurements.
 
 | ID | Stage | Test and expected evidence | Requirements / issues |
 |---|---|---|---|
@@ -22,7 +22,7 @@ Date, test ID, revision/commit, device and firmware versions, test setup, instru
 
 ## Build and CI strategy
 
-Once host code exists, use repeatable host build and unit tests with deterministic mock clock. Add CI for lint, host tests and compile with pinned versions; hardware-specific build only after vendor example validated. Use host fuzz/negative tests for parsers, not random ECU traffic. Desktop visual smoke tests cover circular clipping; hardware tests remain manual until a suitable fixture exists. No workflow or firmware executable in Phase 0.
+The host workflow compiles C++17 with warnings as errors and runs telemetry, navigation, Python renderer and Chromium browser tests. It records runner tool versions and uploads browser diagnostics on failure. Deterministic negative tests exercise the navigation parser, and desktop browser tests check circular clipping. Hardware testing remains a separate gate after vendor-example validation.
 
 ## Release gates
 
