@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="466" height="466" viewBox="0 0 466 466" role="img" aria-label="Simulated motorcycle display">
+<circle cx="233" cy="233" r="232" fill="#090d12" stroke="#55616d" stroke-width="2"/>
+<g font-family="Arial,sans-serif" text-anchor="middle" fill="#edf2f7">
+<text x="233" y="65" font-size="15" fill="#8cc7eb" font-weight="600">SIMULATOR · MOCK ONLY</text>
+<text x="233" y="141" font-size="15" fill="#a9b6c3" font-weight="400">OIL TEMP</text>
+<text x="233" y="222" font-size="72" fill="#edf2f7" font-weight="600">108°C</text>
+<text x="233" y="246" font-size="13" fill="#a9b6c3" font-weight="400">MOCK</text>
+<path d="M98 270 H368" stroke="#34404b" stroke-width="1"/>
+<text x="147" y="301" font-size="15" fill="#a9b6c3" font-weight="400">INTAKE</text>
+<text x="147" y="342" font-size="32" fill="#edf2f7" font-weight="600">32°C</text>
+<text x="147" y="366" font-size="13" fill="#a9b6c3" font-weight="400">MOCK</text>
+<text x="319" y="301" font-size="15" fill="#a9b6c3" font-weight="400">VOLTAGE</text>
+<text x="319" y="342" font-size="32" fill="#edf2f7" font-weight="600">14.2V</text>
+<text x="319" y="366" font-size="13" fill="#a9b6c3" font-weight="400">MOCK</text>
+<text x="233" y="410" font-size="15" fill="#8cc7eb" font-weight="600">TELEMETRY</text>
+</g></svg>
