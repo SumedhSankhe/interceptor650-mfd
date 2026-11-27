@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="466" height="466" viewBox="0 0 466 466" role="img" aria-label="Simulated motorcycle display">
+<circle cx="233" cy="233" r="232" fill="#090d12" stroke="#55616d" stroke-width="2"/>
+<g font-family="Arial,sans-serif" text-anchor="middle" fill="#edf2f7">
+<text x="233" y="65" font-size="15" fill="#8cc7eb" font-weight="600">SIMULATOR · MOCK ONLY</text>
+<text x="233" y="165" font-size="27" fill="#edf2f7" font-weight="600">NO GUIDANCE</text>
+<text x="233" y="201" font-size="19" fill="#a9b6c3" font-weight="400">DISCONNECTED</text>
+<path d="M98 286 H368" stroke="#34404b" stroke-width="1"/>
+<text x="147" y="312" font-size="15" fill="#a9b6c3" font-weight="400">OIL TEMP</text>
+<text x="147" y="353" font-size="32" fill="#a9b6c3" font-weight="600">—</text>
+<text x="147" y="377" font-size="13" fill="#a9b6c3" font-weight="400">STALE</text>
+<text x="319" y="312" font-size="15" fill="#a9b6c3" font-weight="400">VOLTAGE</text>
+<text x="319" y="353" font-size="32" fill="#a9b6c3" font-weight="600">—</text>
+<text x="319" y="377" font-size="13" fill="#a9b6c3" font-weight="400">STALE</text>
+<text x="233" y="410" font-size="15" fill="#8cc7eb" font-weight="600">HYBRID</text>
+</g></svg>
