@@ -1,6 +1,6 @@
 # Host MFD simulator
 
-A 466 × 466 circular SVG display, driven by the same portable C++17 telemetry model intended for later embedded integration. Python standard library only at runtime; no internet or hardware required. Navigation is a deterministic visual fixture, not an implemented BLE protocol or route provider. No LVGL or ESP32 build is included.
+A 466 × 466 circular SVG display, driven by portable C++17 telemetry and navigation models intended for later embedded integration. The Python standard library and compiled fixture run entirely on loopback. Synthetic v1 packets and explicit link events exercise the same decoder and freshness checks covered by the host tests.
 
 ## Preview
 
@@ -18,17 +18,19 @@ From the repository root on Linux, or Windows using WSL with a C++17 compiler an
 mkdir -p simulator/build
 g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include firmware/test/telemetry_test.cpp -o simulator/build/telemetry_test
 ./simulator/build/telemetry_test
+g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include firmware/test/navigation_test.cpp -o simulator/build/navigation_test
+./simulator/build/navigation_test
 g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include simulator/fixture.cpp -o simulator/build/fixture
 python3 simulator/test_render.py
 python3 simulator/server.py
 ```
 
-Open http://127.0.0.1:8765 in a desktop browser. Use the selectors to change mode, telemetry fixture, navigation fixture and temperature units. The server is loopback-only. Stop with Ctrl-C.
+Open http://127.0.0.1:8765 in a desktop browser. Select a display mode and independent telemetry and navigation fixtures. Choose a maneuver, distance in meters and optional roundabout exit. Distance and temperature display units are independent. Set elapsed time to 3000 ms to expire active guidance. The navigation session control replays either a reconnect awaiting a packet or a reconnect with a fresh packet. The server is loopback-only. Stop with Ctrl-C.
 
 ## Browser tests
 
 Build the fixture using the commands above, or use the native Windows build
-in the [V02 browser record](../docs/verification-v02-browser.md). From the
+in the [Phase 1B verification record](../docs/verification-phase-1b.md). From the
 repository root with Node.js and npm installed:
 
 ```sh
@@ -38,25 +40,28 @@ npx playwright install chromium
 npm test
 ```
 
-Playwright starts the loopback simulator on port 18765 and uses Chromium to
-interact with its real controls. Set `SIMULATOR_PYTHON` to a Python executable
+The test launcher starts the loopback simulator on an available port, passes it
+to Playwright and stops the server when the browser suite exits. Chromium
+uses the same controls as a desktop user. Set `SIMULATOR_PYTHON` to a Python executable
 if needed, or `SIMULATOR_TEST_PORT` to use another port. To test an already
 running local instance, set `SIMULATOR_USE_RUNNING_SERVER=1` and match its
-`server.py --port` value with `SIMULATOR_TEST_PORT`.
+`server.py --port` value with `SIMULATOR_TEST_PORT` (default 18765 for an external server).
 
 Set `SIMULATOR_SCREENSHOTS` to a directory to regenerate the PNG evidence.
-The [browser captures](screenshots/browser/) and the [V02 browser record](../docs/verification-v02-browser.md)
-show the tested states, visual observations and limitations. The browser
+The [Phase 1B captures](screenshots/phase-1b/) and the [verification record](../docs/verification-phase-1b.md)
+show the tested states and visual observations. The original [V02 capture set](screenshots/browser/) is retained as historical evidence. The browser
 dependencies are only required to develop or run this test suite.
 
 ## Architecture
 
 - `firmware/include/mfd/telemetry.hpp`: portable data model, source/quality validation, monotonic freshness and unit conversion.
 - `firmware/test/telemetry_test.cpp`: deterministic assertion checks.
-- `fixture.cpp`: command-line mock provider and JSON bridge; no real ECU data.
+- `firmware/include/mfd/navigation.hpp`: v1 packet validation, session ordering and monotonic freshness.
+- `firmware/test/navigation_test.cpp`: protocol vectors, lifecycle assertions and seeded malformed inputs.
+- `fixture.cpp` and `navigation_fixture.hpp`: deterministic mock inputs and JSON bridge.
 - `render.py`: SVG viewport; navigation fixture and telemetry are independently selectable.
 - `server.py` and `index.html`: desktop-only HTTP bridge and controls.
-- `test_render.py`: 96 mode/fixture/unit combinations, invalid selectors and snapshot consistency.
+- `test_render.py`: 168 mode/fixture/unit combinations, invalid selectors and snapshot consistency.
 - `screenshots/`: reproducible 466 × 466 SVG outputs.
 
 ## Earlier Linux validation
@@ -65,4 +70,4 @@ Local Linux: GCC 14.2.0, Python 3.13.5. Strict C++17 compilation and assertion e
 
 ## Next
 
-Review visual hierarchy at actual 1.43-inch scale. Add portable navigation state/decoder tests separately, then board-specific LVGL adaptation after exact module revision and vendor example are verified. No paid provider or permanent electrical design selected.
+Review visual hierarchy at actual 1.43-inch scale. Board-specific LVGL adaptation depends on the exact module revision and vendor example. No paid provider or permanent electrical design selected.

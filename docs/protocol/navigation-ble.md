@@ -1,6 +1,6 @@
 # Navigation BLE protocol v0 proposal
 
-Status: design for discussion, not implemented. Provider-independent; no proprietary map data in required payload. iPhone central, ESP32 peripheral/GATT server. Device-specific service/characteristic UUIDs are TBD; generate and record once implementation begins. No ECU command characteristic.
+Status: v1 frame decoding and lifecycle are implemented for host verification. Physical transport and pairing remain proposed. Provider-independent; no proprietary map data in required payload. iPhone central, ESP32 peripheral/GATT server. Device-specific service/characteristic UUIDs are TBD; generate and record once implementation begins. No ECU command characteristic.
 
 ## Transport
 
@@ -44,6 +44,15 @@ stateDiagram-v2
 
 Publish complete snapshots on material changes and approximately every second while active (initial test target). A new sequence alone cannot make stale provider information fresh: companion must explicitly send unavailable if route/location state is stale. Display uses local monotonic reception age; after 3 s without accepted active state, suppress arrow and distance. Disconnect clears guidance immediately. Never reuse state across connection. No phone clock synchronization required for freshness.
 
+## Host interpretation for protocol review
+
+- The proposal does not reserve a session ID. The decoder accepts any unsigned 32-bit ID, including zero, and uses explicit presence internally. Propose preserving this full range in v1.
+- The active-state paragraph calls unknown guidance unavailable while also requiring a supported maneuver. The host treats active with unknown maneuver as an invalid combination and leaves the last accepted snapshot and its original age intact. Propose requiring the sender to publish an explicit unavailable snapshot when it cannot supply a supported maneuver.
+- Sequence 1 establishes the session. Subsequent complete snapshots may skip sequence numbers. The last accepted session ID cannot reopen on the next link, and a duplicate connection notification cannot reset ordering. Propose clarifying that the transport drops callbacks from prior link instances and the sender chooses a new ID after reconnect or sequence exhaustion. The decoder tracks the immediately previous session, leaving transport authentication and cross-link isolation to the authorized transport.
+- Distance uses the complete unsigned 32-bit range. The active snapshot expires at 3000 ms inclusive. Idle, rerouting, arrived and unavailable contain no guidance and remain visible until the next snapshot or disconnect.
+
+The frame format and the published test vectors are unchanged.
+
 ## Deferred fields
 
 Road name, ETA and remaining trip distance can be added as separately versioned bounded metadata only after provider terms and usability review; no provider-owned metadata is persisted. No GPX geometry or arbitrary text in v1. For forward compatibility unknown versions are rejected, not guessed. No MCU-to-ECU bridging.
@@ -56,4 +65,4 @@ Active right turn, 400 m, session 1, sequence 1:
 Rerouting, same session, sequence 2:
 `01 02 00 00 01 00 00 00 02 00 00 00 00 00 00 00 00 00 00 00`
 
-Test truncation, bad version, duplicate/out-of-order sequence, reserved bits, unsupported maneuver, missing distance, reconnect, timeout and provider-stale state. No implementation or tests executed yet.
+Host validation includes both vectors, truncation, version and enum rejection, replay, field validity, reconnect, freshness, and explicit unavailable state. See the [Phase 1B V05 record](../verification-phase-1b.md).

@@ -25,3 +25,7 @@ Status: proposed Phase 0 decisions, pending owner review. Supersede with new ADR
 ## ADR-006 — Local and privacy-conscious logging
 
 **Status:** proposed. **Context:** useful thermal trend data; storage/clock unverified and navigation content may be restricted. **Alternatives:** cloud-first, local file, no logging. **Decision:** optional local telemetry files with source/time-quality metadata; GPS opt-in, no provider-owned map content persisted. **Consequences:** export and power-loss recovery required; storage failure must not stop display. **Gate:** V09 and licensing review.
+
+## ADR-007 — Exercise navigation packets in the host simulator
+
+**Status:** proposed for Phase 1B review. **Context:** Static SVG fixtures left v1 decoding and stale guidance unverified. **Alternatives:** render synthetic state directly or build a hardware transport first. **Decision:** replay deterministic v1 snapshots, link events and a supplied monotonic clock through the portable decoder and model. Keep telemetry independent and use GitHub Actions to exercise the host build and browser. **Consequences:** HTTP requests can reproduce any fixture without shared server state. The runtime remains local with only the Python standard library and C++ fixture. **Gate:** V02/V05 host review, then V06/V07 transport and provider validation. See the [v1 host interpretation](../protocol/navigation-ble.md#host-interpretation-for-protocol-review).

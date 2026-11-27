@@ -2,19 +2,59 @@
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Interceptor 650 MFD simulator</title>
 <style>
-*{box-sizing:border-box}body{background:#171d24;color:#edf2f7;font:16px system-ui,sans-serif;margin:0;padding:32px}main{max-width:920px;margin:auto}h1{font-size:24px;margin:0 0 8px}p{color:#a9b6c3;line-height:1.5}section{display:flex;flex-wrap:wrap;align-items:center;gap:32px}img{width:min(466px,100%);height:auto;display:block}form{flex:1;min-width:min(220px,100%)}label{display:block;margin:16px 0;color:#c4d0db}select{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;background:#242e38;border:1px solid #536270;border-radius:6px;font:inherit}small{color:#a9b6c3}#status{min-height:24px}
+*{box-sizing:border-box}
+body{background:#171d24;color:#edf2f7;font:16px system-ui,sans-serif;margin:0;padding:32px}
+main{max-width:920px;margin:auto}
+h1{font-size:24px;margin:0 0 8px}
+p{color:#a9b6c3;line-height:1.5}
+section{display:flex;flex-wrap:wrap;align-items:center;gap:32px}
+img{width:min(466px,100%);height:auto;display:block}
+form{flex:1;min-width:min(220px,100%)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:16px;margin:16px 0}
+label{display:block;color:#c4d0db;min-width:0}
+select,input{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;background:#242e38;border:1px solid #536270;border-radius:6px;font:inherit}
+input:disabled{opacity:.55}
+small{color:#a9b6c3}
+#status{min-height:24px}
 </style>
 <main><h1>Interceptor 650 MFD · desktop simulator</h1><p>466 × 466 viewport · synthetic data only · no vehicle connection</p>
 <section><img id="display" width="466" height="466" alt="Simulated circular instrument"><form id="controls">
+<div class="fields">
 <label>Display mode<select name="mode"><option value="telemetry">Telemetry</option><option value="navigation">Navigation</option><option value="hybrid">Hybrid</option></select></label>
 <label>Telemetry fixture<select name="scenario"><option value="normal">Normal</option><option value="stale">Stale (3 seconds)</option><option value="unsupported">Oil temperature unsupported</option><option value="disconnected">ECU disconnected</option></select></label>
-<label>Navigation fixture<select name="nav"><option value="active">Active · right turn</option><option value="rerouting">Rerouting</option><option value="disconnected">Phone disconnected</option><option value="stale">Stale guidance</option></select></label>
+<label>Navigation fixture<select name="nav"><option value="active">Active</option><option value="idle">Idle</option><option value="rerouting">Rerouting</option><option value="arrived">Arrived</option><option value="unavailable">Unavailable</option><option value="disconnected">Phone disconnected</option><option value="stale">Stale guidance (3 seconds)</option></select></label>
+<label>Navigation session<select name="connection"><option value="current">Current session</option><option value="waiting">Reconnect · awaiting snapshot</option><option value="reconnected">Reconnect · fresh snapshot</option></select></label>
+<label>Maneuver<select name="maneuver">
+<option value="straight">Straight ahead</option><option value="left">Left turn</option><option value="right" selected>Right turn</option><option value="uturn">U-turn</option><option value="roundabout">Roundabout</option>
+<option value="slight-left">Slight left</option><option value="slight-right">Slight right</option><option value="keep-left">Keep left</option><option value="keep-right">Keep right</option>
+</select></label>
+<label>Roundabout exit<input type="number" name="exit_number" min="0" max="255" value="2" required disabled></label>
+<label>Distance (m)<input type="number" name="distance" min="0" max="4294967295" value="400" required></label>
+<label>Elapsed since snapshot (ms)<input type="number" name="age" min="0" max="4294967295" value="0" required></label>
 <label>Temperature units<select name="unit"><option>C</option><option>F</option></select></label>
-<small>Controls are desktop-only. No real sensor thresholds, GPS or BLE transport.</small><p id="status" role="status"></p></form></section></main>
+<label>Distance units<select name="distance_unit"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label>
+</div>
+<small>A roundabout exit of 0 means unknown. Each change replays a deterministic session.</small><p id="status" role="status"></p></form></section></main>
 <script>
-const form=document.querySelector('#controls'), display=document.querySelector('#display'), status=document.querySelector('#status');
-function update(){status.textContent='Updating fixture…';display.src='/display.svg?'+new URLSearchParams(new FormData(form));}
-display.addEventListener('load',()=>status.textContent='Fixture rendered');
-display.addEventListener('error',()=>status.textContent='Unable to render fixture');
-form.addEventListener('change',update);update();
+const form = document.querySelector('#controls');
+const display = document.querySelector('#display');
+const status = document.querySelector('#status');
+function update() {
+  form.elements.exit_number.disabled = form.elements.maneuver.value !== 'roundabout';
+  if (!form.reportValidity()) return;
+  const params = new URLSearchParams(new FormData(form));
+  // Number inputs can offer exponent notation. The fixture accepts decimal integers.
+  for (const name of ['distance', 'age', 'exit_number']) {
+    if (params.has(name)) params.set(name, String(form.elements[name].valueAsNumber));
+  }
+  const src = '/display.svg?' + params;
+  if (display.getAttribute('src') === src) return;
+  status.textContent = 'Updating fixture…';
+  display.src = src;
+}
+display.addEventListener('load', () => status.textContent = 'Fixture rendered');
+display.addEventListener('error', () => status.textContent = 'Unable to render fixture');
+form.addEventListener('change', update);
+form.addEventListener('submit', (event) => event.preventDefault());
+update();
 </script></html>

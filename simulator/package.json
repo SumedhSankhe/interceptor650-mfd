@@ -2,7 +2,7 @@
   "name": "interceptor650-mfd-simulator-tests",
   "private": true,
   "scripts": {
-    "test": "playwright test"
+    "test": "node run-browser-tests.js"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1"

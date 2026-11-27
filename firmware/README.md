@@ -32,10 +32,10 @@ Compare reported voltage against a multimeter at the battery; distinguish adapte
 
 [System architecture](../docs/architecture.md), [requirements](../docs/requirements.md), [BLE proposal](../docs/protocol/navigation-ble.md), [verification](../docs/verification.md).
 
-The phone is optional for telemetry; navigation requires a phone in the initial design. Candidate portable modules: domain samples and quality, telemetry provider, navigation decoder/state, state reducer, display adapter, bounded session logger and board HAL. The portable telemetry model now exists in `include/mfd/telemetry.hpp`; the other boundaries remain proposed. Start with deterministic host fixtures and fake clock; then adopt exact vendor demo dependencies and pin versions. LVGL rendering must have a single owner. No hardware-specific build or CI test is yet present.
+The phone is optional for telemetry; navigation requires a phone in the initial design. Candidate portable modules: domain samples and quality, telemetry provider, navigation decoder/state, state reducer, display adapter, bounded session logger and board HAL. The portable models are in `include/mfd/telemetry.hpp` and `include/mfd/navigation.hpp`. Host tests use deterministic fixtures and explicitly supplied monotonic time. GitHub Actions runs host validation. Hardware build and LVGL integration await the verified vendor example.
 
 Navigation provider remains undecided; see [research](../docs/research/navigation.md). The BLE state contract is provider-independent. Do not log proprietary map content or require a network connection for engine monitoring.
 
 ## Host implementation
 
-See [simulator](../simulator/README.md) for strict C++17 compilation, portable telemetry tests, the desktop fixture and actual rendered snapshots. Navigation is a visual fixture, not a BLE decoder or live provider. V02 is partially addressed; no hardware gates have passed.
+See [simulator](../simulator/README.md) for strict C++17 compilation, portable telemetry tests, the desktop fixture and actual rendered snapshots. The simulator exercises the v1 navigation decoder with synthetic frames. See the [V02 and V05 Phase 1B record](../docs/verification-phase-1b.md) for host evidence. Physical BLE and hardware verification remain open.

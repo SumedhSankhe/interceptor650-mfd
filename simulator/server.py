@@ -14,10 +14,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(204)
             self.end_headers()
         elif url.path == "/display.svg":
-            params = parse_qs(url.query)
+            params = parse_qs(url.query, keep_blank_values=True)
             try:
                 svg = render(*(params.get(k, [v])[0] for k, v in zip(
-                    ("mode", "scenario", "nav", "unit"), ("telemetry", "normal", "active", "C"))))
+                    ("mode", "scenario", "nav", "unit", "maneuver", "distance",
+                     "exit_number", "age", "distance_unit", "connection"),
+                    ("telemetry", "normal", "active", "C", "right", "400", "2", "0", "metric", "current"))))
             except ValueError:
                 self.send_error(400)
             else:
