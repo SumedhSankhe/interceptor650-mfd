@@ -14,6 +14,7 @@ struct Reading {
     Quality quality = Quality::Missing;
     std::uint64_t acquired_ms = 0;
 };
+using TelemetryReadings = std::array<Reading, 4>;
 class Telemetry {
 public:
     static constexpr std::uint64_t stale_ms = 3000;
@@ -37,9 +38,20 @@ public:
         }
         return r;
     }
+    TelemetryReadings snapshot(std::uint64_t now) const {
+        return {get(Metric::Oil, now), get(Metric::Intake, now), get(Metric::Voltage, now), get(Metric::Rpm, now)};
+    }
+
+    void disconnect_ecu() {
+        const auto voltage = readings_[static_cast<unsigned>(Metric::Voltage)];
+        disconnect();
+        if (voltage.source == Source::Battery || voltage.source == Source::Adapter) {
+            readings_[static_cast<unsigned>(Metric::Voltage)] = voltage;
+        }
+    }
     void disconnect() { readings_ = {}; }
 private:
-    std::array<Reading, 4> readings_{};
+    TelemetryReadings readings_{};
 };
 inline double fahrenheit(double celsius) { return celsius * 1.8 + 32.0; }
 } // namespace mfd

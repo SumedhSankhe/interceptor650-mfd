@@ -93,12 +93,11 @@ public:
     explicit FileRecordingStorage(std::filesystem::path directory) : directory_(std::move(directory)) {}
 
     StorageResult reserve(std::uint64_t &id) override {
-        std::vector<std::uint64_t> ids;
-        if (const auto status = scan(ids); status != StorageResult::Ok) return status;
         std::uint64_t candidate = 0;
-        for (const auto existing : ids) {
-            if (existing > candidate) candidate = existing;
-        }
+        const auto status = scan([&candidate](std::uint64_t id) {
+            if (id > candidate) candidate = id;
+        });
+        if (status != StorageResult::Ok) return status;
         while (candidate != std::numeric_limits<std::uint64_t>::max()) {
             ++candidate;
             const auto result = detail::create_file(path(candidate));
@@ -130,24 +129,25 @@ public:
         return file ? recover_recording(file, id) : Recovery{RecoveryState::Unavailable};
     }
 
+    template <typename Visitor>
+    StorageResult visit_recovery(Visitor visitor) const {
+        return scan([&](std::uint64_t id) { visitor(id, recover(id)); });
+    }
+
     StorageResult recover_all(std::vector<std::pair<std::uint64_t, Recovery>> &sessions) const {
-        std::vector<std::uint64_t> ids;
-        const auto result = scan(ids);
-        if (result == StorageResult::Ok) {
-            for (const auto id : ids) sessions.emplace_back(id, recover(id));
-        }
-        return result;
+        return visit_recovery([&](std::uint64_t id, Recovery report) { sessions.emplace_back(id, report); });
     }
 
 private:
     std::filesystem::path path(std::uint64_t id) const { return directory_ / (std::to_string(id) + ".csv"); }
 
-    StorageResult scan(std::vector<std::uint64_t> &ids) const {
+    template <typename Visitor>
+    StorageResult scan(Visitor visitor) const {
         std::error_code code;
         for (std::filesystem::directory_iterator it(directory_, code), end; !code && it != end; it.increment(code)) {
             const auto file = it->path();
             std::uint64_t id = 0;
-            if (file.extension() == ".csv" && record_format::parse(file.stem().string(), id)) ids.push_back(id);
+            if (file.extension() == ".csv" && record_format::parse(file.stem().string(), id)) visitor(id);
         }
         return code ? detail::error(code) : StorageResult::Ok;
     }

@@ -12,13 +12,16 @@ img{width:min(466px,100%);height:auto;display:block}
 form{flex:1;min-width:min(220px,100%)}
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:16px;margin:16px 0}
 label{display:block;color:#c4d0db;min-width:0}
-select,input{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;background:#242e38;border:1px solid #536270;border-radius:6px;font:inherit}
-input:disabled{opacity:.55}
+select,input,button{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;background:#242e38;border:1px solid #536270;border-radius:6px;font:inherit}
+input:disabled,button:disabled{opacity:.55}
+label[hidden]{display:none}
+#ride-fixture{margin-top:12px}
 small{color:#a9b6c3}
 #status{min-height:24px}
 #ride{border-top:1px solid #536270;margin-top:24px;padding-top:20px}
 #ride h2{font-size:20px;margin:0 0 16px}
-#ride-scenario{max-width:360px}
+#ride-scenario,#replay{max-width:360px}
+#timeline-fields{margin-top:12px;max-width:360px}
 #ride-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:14px;margin:20px 0 0}
 #ride-details div{background:#242e38;padding:10px 12px;border-radius:6px;min-width:0}
 #ride-details dt{font-size:13px;color:#c4d0db}
@@ -26,6 +29,31 @@ small{color:#a9b6c3}
 </style>
 <main><h1>Interceptor 650 MFD · desktop simulator</h1><p>466 × 466 viewport · synthetic data only · no vehicle connection</p>
 <section><img id="display" width="466" height="466" alt="Simulated circular instrument"><form id="controls">
+<label for="replay">Simulation mode</label>
+<select id="replay"><option value="fixtures">Fixture controls</option><option value="timeline">Integrated ride timeline</option></select>
+<div id="timeline-fields" hidden>
+<label for="step">Replay step</label>
+<select id="step">
+<option value="0">0 · Ignition on</option><option value="1">1 · Engine start</option>
+<option value="2">2 · Warming up</option><option value="3">3 · Right-turn guidance</option>
+<option value="4">4 · Roundabout guidance</option><option value="5">5 · Engine stall</option>
+<option value="6">6 · Engine restart</option><option value="7">7 · ECU disconnected</option>
+<option value="8">8 · Phone disconnected</option><option value="9">9 · Storage worker delayed</option>
+<option value="10">10 · Storage queue filling</option><option value="11">11 · Storage queue filling</option>
+<option value="12">12 · Storage queue full</option><option value="13">13 · Stop with queue full</option>
+<option value="14">14 · Combined degraded state</option><option value="15">15 · Storage recovery</option>
+<option value="16">16 · Interrupted write</option><option value="17">17 · Cold boot recovery</option>
+</select>
+<button id="next-step" type="button">Next replay step</button>
+</div>
+<div id="ride-fixture">
+<label for="ride-scenario">Ride scenario</label>
+<select id="ride-scenario">
+<option value="ignition">Ignition on · engine stopped</option><option value="start">Engine start</option><option value="running">Normal running</option>
+<option value="stall">Engine stall</option><option value="restart">Restart after stall</option><option value="kill-switch">Kill-switch stop</option>
+<option value="ecu-loss">ECU communication loss</option><option value="ecu-reconnect">ECU reconnection</option><option value="power-loss">Power loss and reboot</option>
+<option value="storage-failure">Storage full</option><option value="storage-recovery">Storage write recovers</option><option value="phone-independent">Recording without phone</option>
+</select></div>
 <div class="fields">
 <label>Display mode<select name="mode"><option value="telemetry">Telemetry</option><option value="navigation">Navigation</option><option value="hybrid">Hybrid</option></select></label>
 <label>Telemetry fixture<select name="scenario"><option value="normal">Normal</option><option value="stale">Stale (3 seconds)</option><option value="unsupported">Oil temperature unsupported</option><option value="disconnected">ECU disconnected</option></select></label>
@@ -41,74 +69,108 @@ small{color:#a9b6c3}
 <label>Temperature units<select name="unit"><option>C</option><option>F</option></select></label>
 <label>Distance units<select name="distance_unit"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label>
 </div>
-<small>A roundabout exit of 0 means unknown. Each change replays a deterministic session.</small><p id="status" role="status"></p></form></section>
+<small id="fixture-help">A roundabout exit of 0 means unknown. Each change replays a deterministic session.</small><p id="status" role="status"></p></form></section>
 <aside id="ride" aria-labelledby="ride-title"><h2 id="ride-title">Simulated ride recording</h2>
-<label for="ride-scenario">Ride scenario</label>
-<select id="ride-scenario">
-<option value="ignition">Ignition on · engine stopped</option><option value="start">Engine start</option><option value="running">Normal running</option>
-<option value="stall">Engine stall</option><option value="restart">Restart after stall</option><option value="kill-switch">Kill-switch stop</option>
-<option value="ecu-loss">ECU communication loss</option><option value="ecu-reconnect">ECU reconnection</option><option value="power-loss">Power loss and reboot</option>
-<option value="storage-failure">Storage full</option><option value="storage-recovery">Storage write recovers</option><option value="phone-independent">Recording without phone</option>
-</select>
 <dl id="ride-details">
 <div><dt>RPM</dt><dd id="ride-rpm">—</dd></div>
 <div><dt>RPM quality</dt><dd id="ride-rpm_quality">—</dd></div>
 <div><dt>Engine state</dt><dd id="ride-engine">—</dd></div>
 <div><dt>Recording state</dt><dd id="ride-recording">—</dd></div>
 <div><dt>Session ID</dt><dd id="ride-session">—</dd></div>
-<div><dt>Elapsed (ms)</dt><dd id="ride-elapsed_ms">—</dd></div>
+<div><dt>Uptime (ms)</dt><dd id="ride-elapsed_ms">—</dd></div>
 <div><dt>Records written</dt><dd id="ride-records">—</dd></div>
 <div><dt>Sync requests</dt><dd id="ride-sync_requests">—</dd></div>
 <div><dt>Storage errors</dt><dd id="ride-storage_errors">—</dd></div>
 <div><dt>Last storage error</dt><dd id="ride-last_error">—</dd></div>
 <div><dt>Recovery outcome</dt><dd id="ride-recovery">—</dd></div>
 <div><dt>Recovered records</dt><dd id="ride-recovered_records">—</dd></div>
+<div><dt>Snapshot sequence</dt><dd id="ride-sequence">—</dd></div>
+<div><dt>ECU link</dt><dd id="ride-ecu">—</dd></div>
+<div><dt>Phone link</dt><dd id="ride-phone">—</dd></div>
+<div><dt>Oil reading age (ms)</dt><dd id="ride-telemetry_age_ms">—</dd></div>
+<div><dt>Navigation age (ms)</dt><dd id="ride-navigation_age_ms">—</dd></div>
+<div><dt>Queue depth</dt><dd id="ride-queue_depth">—</dd></div>
+<div><dt>Queue high-water</dt><dd id="ride-queue_peak">—</dd></div>
+<div><dt>Dropped samples</dt><dd id="ride-dropped_samples">—</dd></div>
+<div><dt>Worker sync attempts</dt><dd id="ride-sync_completed_attempts">—</dd></div>
+<div><dt>Coalesced sync requests</dt><dd id="ride-sync_coalesced">—</dd></div>
+<div><dt>Settings</dt><dd id="ride-settings">—</dd></div>
+<div><dt>Clock quality</dt><dd id="ride-clock">—</dd></div>
 </dl>
-<p id="ride-error" aria-live="polite" hidden></p>
 </aside></main>
 <script>
 const form = document.querySelector('#controls');
 const display = document.querySelector('#display');
 const status = document.querySelector('#status');
-function update() {
-  form.elements.exit_number.disabled = form.elements.maneuver.value !== 'roundabout';
+const replay = document.querySelector('#replay');
+const step = document.querySelector('#step');
+const ride = document.querySelector('#ride-scenario');
+const next = document.querySelector('#next-step');
+const fields = document.querySelectorAll('#ride-details dd');
+let request = 0;
+let currentQuery = '';
+let currentImage = '';
+
+async function update() {
+  const timeline = replay.value === 'timeline';
+  document.querySelector('#timeline-fields').hidden = !timeline;
+  document.querySelector('#ride-fixture').hidden = timeline;
+  document.querySelector('#fixture-help').hidden = timeline;
+  next.disabled = step.selectedIndex === step.options.length - 1;
+  for (const name of ['scenario', 'nav', 'connection', 'maneuver', 'distance', 'age']) {
+    form.elements[name].disabled = timeline;
+    form.elements[name].closest('label').hidden = timeline;
+  }
+  form.elements.exit_number.disabled = timeline || form.elements.maneuver.value !== 'roundabout';
+  form.elements.exit_number.closest('label').hidden = timeline;
   if (!form.reportValidity()) return;
   const params = new URLSearchParams(new FormData(form));
-  // Number inputs can offer exponent notation. The fixture accepts decimal integers.
   for (const name of ['distance', 'age', 'exit_number']) {
     if (params.has(name)) params.set(name, String(form.elements[name].valueAsNumber));
   }
-  const src = '/display.svg?' + params;
-  if (display.getAttribute('src') === src) return;
+  params.set('replay', replay.value);
+  params.set('step', timeline ? step.value : '0');
+  params.set('ride', timeline ? 'ignition' : ride.value);
+  const query = params.toString();
+  if (currentQuery === query) return;
+  currentQuery = query;
+  const generation = ++request;
   status.textContent = 'Updating fixture…';
-  display.src = src;
-}
-display.addEventListener('load', () => status.textContent = 'Fixture rendered');
-display.addEventListener('error', () => status.textContent = 'Unable to render fixture');
-form.addEventListener('change', update);
-form.addEventListener('submit', (event) => event.preventDefault());
-update();
-
-const rideScenario = document.querySelector('#ride-scenario');
-const rideError = document.querySelector('#ride-error');
-let rideRequest = 0;
-async function updateRide() {
-  const request = ++rideRequest;
-  const fields = document.querySelectorAll('#ride-details dd');
-  rideError.hidden = true;
-  for (const field of fields) field.textContent = '—';
   try {
-    const response = await fetch('/ride.json?' + new URLSearchParams({ scenario: rideScenario.value }));
-    if (!response.ok) throw new Error('Diagnostics request failed');
-    const data = await response.json();
-    if (request !== rideRequest) return;
-    for (const field of fields) field.textContent = data[field.id.slice(5)] ?? '—';
+    const response = await fetch('/snapshot.json?' + query);
+    if (!response.ok) throw new Error('Snapshot request failed');
+    const { svg, diagnostics } = await response.json();
+    if (generation !== request) return;
+
+    // Validate the new image before replacing the visible display and its diagnostics.
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    try {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      if (generation !== request) return;
+      const previous = currentImage;
+      currentImage = url;
+      display.src = url;
+      for (const field of fields) field.textContent = diagnostics[field.id.slice(5)] ?? '—';
+      document.querySelector('#ride-details').dataset.sequence = diagnostics.sequence;
+      display.dataset.sequence = diagnostics.sequence;
+      status.textContent = 'Fixture rendered';
+      if (previous) URL.revokeObjectURL(previous);
+    } finally {
+      if (currentImage !== url) URL.revokeObjectURL(url);
+    }
   } catch {
-    if (request !== rideRequest) return;
-    rideError.textContent = 'Unable to load ride diagnostics';
-    rideError.hidden = false;
+    if (generation !== request) return;
+    currentQuery = '';
+    status.textContent = 'Unable to render fixture';
   }
 }
-rideScenario.addEventListener('change', updateRide);
-updateRide();
+form.addEventListener('change', update);
+form.addEventListener('submit', (event) => event.preventDefault());
+next.addEventListener('click', () => {
+  if (!next.disabled) step.selectedIndex += 1;
+  update();
+});
+update();
 </script></html>

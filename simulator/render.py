@@ -47,16 +47,33 @@ def distance_label(meters, distance_unit):
     return f"{meters / 1000:.1f} km" if meters < 100000 else f"{meters / 1000:.0f} km"
 
 
-def render(mode="telemetry", scenario="normal", nav="active", unit="C", maneuver="right",
-           distance=400, exit_number=2, age=0, distance_unit="metric", connection="current"):
+def runtime_snapshot(mode="telemetry", scenario="normal", nav="active", unit="C", maneuver="right",
+                     distance=400, exit_number=2, age=0, distance_unit="metric", connection="current",
+                     ride="ignition", replay="fixtures", step=0):
     if (mode not in MODES or scenario not in SCENARIOS or nav not in NAV_STATES or unit not in ("C", "F")
             or maneuver not in MANEUVERS[1:] or distance_unit not in ("metric", "imperial")
-            or connection not in CONNECTIONS):
+            or connection not in CONNECTIONS or replay not in ("fixtures", "timeline")):
         raise ValueError("Invalid fixture selection")
-    inputs = (NAV_STATES.index(nav), MANEUVERS.index(maneuver), unsigned(distance, 0xffffffff),
-              unsigned(exit_number, 255), unsigned(age, 0xffffffff), CONNECTIONS.index(connection))
-    data = json.loads(subprocess.check_output(
-        [str(FIXTURE), scenario, unit, *map(str, inputs)], text=True))
+    inputs = (MODES.index(mode), ("C", "F").index(unit), ("metric", "imperial").index(distance_unit),
+              NAV_STATES.index(nav), MANEUVERS.index(maneuver), unsigned(distance, 0xffffffff),
+              unsigned(exit_number, 255), unsigned(age, 0xffffffff), CONNECTIONS.index(connection),
+              unsigned(step, 17))
+    result = subprocess.run([str(FIXTURE), scenario, ride, replay, *map(str, inputs)],
+                            capture_output=True, check=False)
+    if result.returncode == 2:
+        raise ValueError("Invalid runtime fixture")
+    result.check_returncode()
+    return json.loads(result.stdout)
+
+
+def render(*args, **kwargs):
+    return render_snapshot(runtime_snapshot(*args, **kwargs))
+
+
+def render_snapshot(data):
+    mode = MODES[data["mode"]]
+    unit = ("C", "F")[data["temperature_unit"]]
+    distance_unit = ("metric", "imperial")[data["distance_unit"]]
     oil, intake, voltage = data["telemetry"]
     navigation = data["navigation"]
     state = NAV_STATES[navigation["state"]]

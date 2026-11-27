@@ -72,8 +72,8 @@ class RideDiagnosticsTests(unittest.TestCase):
         cls.server_thread.join()
         cls.server.server_close()
 
-    def diagnostics(self, query):
-        with urlopen(f"http://127.0.0.1:{self.server.server_port}/ride.json?{query}", timeout=5) as response:
+    def diagnostics(self, query, path="ride.json"):
+        with urlopen(f"http://127.0.0.1:{self.server.server_port}/{path}?{query}", timeout=5) as response:
             self.assertEqual(response.headers.get_content_type(), "application/json")
             self.assertEqual(response.headers["Cache-Control"], "no-store")
             return json.load(response)
@@ -92,6 +92,24 @@ class RideDiagnosticsTests(unittest.TestCase):
         self.assertEqual((storage["recording"], storage["last_error"]), ("degraded", "full"))
         resumed = self.diagnostics("scenario=storage-recovery")
         self.assertEqual((resumed["recording"], resumed["session"]), ("recording", 1))
+
+    def test_shared_runtime_snapshot(self):
+        query = "replay=timeline&mode=hybrid&step=7"
+        result = self.diagnostics(query, "snapshot.json")
+        state = result["diagnostics"]
+        self.assertIsNone(state["oil_c"])
+        self.assertEqual((state["ecu"], state["phone"], state["engine"]),
+                         ("disconnected", "connected", "unknown"))
+        self.assertIn("ROUNDABOUT · EXIT 2", result["svg"])
+        self.assertIn(f'{state["voltage_v"]:.1f}V', result["svg"])
+        self.assertEqual(result, self.diagnostics(query, "snapshot.json"))
+        reboot = self.diagnostics("replay=timeline&mode=hybrid&step=17", "snapshot.json")
+        self.assertEqual((reboot["diagnostics"]["session"], reboot["diagnostics"]["elapsed_ms"]), (2, 0))
+        self.assertNotIn("400 m", reboot["svg"])
+        with self.assertRaises(HTTPError) as invalid:
+            self.diagnostics("replay=timeline&step=18", "snapshot.json")
+        self.assertEqual(invalid.exception.code, 400)
+        invalid.exception.close()
 
     def test_unknown_ride_scenario(self):
         for query in ("scenario=bad", "scenario="):
