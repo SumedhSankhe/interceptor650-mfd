@@ -209,6 +209,7 @@ test('renders every maneuver with a distinct glyph and fits its labels inside th
     checkText(display.svg, [caption, '400 m']);
     const glyph = display.svg.match(/<path d="[^"]+"(?: transform="[^"]+")? fill="none"/)?.[0];
     expect(glyph).toBeTruthy();
+    if (maneuver === 'roundabout') expect(glyph).toContain('A32 32 0 1 0');
     expect(glyphs.has(glyph)).toBe(false);
     glyphs.add(glyph);
     await saveEvidence(page, 'maneuver-' + maneuver);
@@ -251,4 +252,53 @@ test('clears obsolete guidance, replays a new session, and observes the timeout 
   checkText((await select(page, 'nav', 'active')).svg, ['UNAVAILABLE', '108°C'], ['400 m']);
   checkText((await select(page, 'connection', 'reconnected')).svg, ['400 m', 'TURN RIGHT', '108°C']);
   checkText((await select(page, 'scenario', 'disconnected')).svg, ['400 m', 'MISSING'], ['108°C']);
+});
+
+async function ride(page, scenario, fields) {
+  const response = page.waitForResponse((result) => {
+    const url = new URL(result.url());
+    return url.pathname === '/ride.json' && url.searchParams.get('scenario') === scenario;
+  });
+  await page.getByLabel('Ride scenario').selectOption(scenario);
+  expect((await response).status()).toBe(200);
+  for (const [field, value] of Object.entries(fields)) {
+    await expect(page.locator('#ride-' + field)).toHaveText(String(value));
+  }
+}
+
+test('records one ignition session across engine stops, restarts, ECU and phone gaps', async ({ page }) => {
+  await openSimulator(page);
+  await expect(page.locator('#ride-rpm')).toHaveText('0');
+  await expect(page.locator('#ride-rpm_quality')).toHaveText('simulated');
+  await expect(page.locator('#ride-engine')).toHaveText('stopped');
+  await expect(page.locator('#ride-session')).toHaveText('1');
+  await ride(page, 'start', { engine: 'running', session: 1, records: 2 });
+  await ride(page, 'running', { engine: 'running', session: 1, records: 7, sync_requests: 1 });
+  await ride(page, 'stall', { rpm: 0, engine: 'stopped', session: 1, records: 3, sync_requests: 1 });
+  await saveEvidence(page, 'ride-stall');
+  await ride(page, 'restart', { engine: 'running', session: 1, records: 4, recording: 'recording' });
+  await ride(page, 'kill-switch', { rpm: 0, engine: 'stopped', session: 1, sync_requests: 1 });
+  await ride(page, 'ecu-loss', { rpm: '—', rpm_quality: 'missing', engine: 'unknown', session: 1, sync_requests: 0 });
+  await ride(page, 'ecu-reconnect', { engine: 'running', session: 1, records: 4 });
+  await select(page, 'mode', 'hybrid');
+  const display = await select(page, 'nav', 'disconnected');
+  checkText(display.svg, ['DISCONNECTED', '108°C', '14.2V'], ['400 m']);
+  await ride(page, 'phone-independent', { engine: 'running', session: 1, records: 7 });
+  await expect(page.locator(displaySelector)).toHaveJSProperty('currentSrc', display.url);
+  await saveEvidence(page, 'ride-without-phone');
+});
+
+test('reports storage failure, resumes writing, and starts a new session after a torn record', async ({ page }) => {
+  await openSimulator(page);
+  await select(page, 'mode', 'hybrid');
+  await ride(page, 'storage-failure', {
+    engine: 'running', recording: 'degraded', session: 1, storage_errors: 1, last_error: 'full', records: 2,
+  });
+  await saveEvidence(page, 'ride-storage-full');
+  await ride(page, 'storage-recovery', { recording: 'recording', session: 1, records: 3, storage_errors: 1 });
+  await ride(page, 'power-loss', {
+    rpm: '—', engine: 'unknown', recording: 'recording', session: 2, elapsed_ms: 0, records: 1,
+    recovery: 'Truncated tail; previous session interrupted', recovered_records: 2,
+  });
+  await saveEvidence(page, 'ride-power-recovery');
 });

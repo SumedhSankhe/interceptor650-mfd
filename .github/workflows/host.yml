@@ -32,9 +32,11 @@ jobs:
           flags=(-std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include)
           g++ "${flags[@]}" firmware/test/telemetry_test.cpp -o simulator/build/telemetry_test
           g++ "${flags[@]}" firmware/test/navigation_test.cpp -o simulator/build/navigation_test
+          g++ "${flags[@]}" firmware/test/recording_test.cpp -o simulator/build/recording_test
           g++ "${flags[@]}" simulator/fixture.cpp -o simulator/build/fixture
           simulator/build/telemetry_test
           simulator/build/navigation_test
+          simulator/build/recording_test
           python3 simulator/test_render.py
       - name: Install browser dependencies
         working-directory: simulator

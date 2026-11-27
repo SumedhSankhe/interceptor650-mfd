@@ -9,6 +9,8 @@ Status: working scope for Phase 0, subject to feasibility and design review. The
 | TEL-001 | Display engine oil temperature when a verified source is available | P0 |
 | TEL-002 | Display intake air temperature when a verified source is available | P0 |
 | TEL-003 | Display charging voltage, identifying the measurement source | P0 |
+| TEL-004 | Acquire engine RPM from a verified source for internal recording and state | P1 |
+| ENG-001 | Derive running, stopped or unknown from fresh RPM | P1 |
 | NAV-001 | Display next turn maneuver | P1 |
 | NAV-002 | Display distance to next maneuver | P1 |
 | NAV-003 | Support iOS companion navigation over BLE | P1 |
@@ -16,6 +18,8 @@ Status: working scope for Phase 0, subject to feasibility and design review. The
 | UI-001 | Select telemetry or navigation mode | P1 |
 | UI-002 | Hybrid view with navigation and selected telemetry | P1 |
 | LOG-001 | Persist ride telemetry if storage is supported | P1 |
+| LOG-003 | Keep one recoverable recording session per ignition-powered boot | P1 |
+| LOG-004 | Persist display and unit preferences safely | P1 |
 | LOG-002 | Optionally associate GPS position with telemetry | P2 |
 | NAV-005 | Import predefined GPX routes | P2 |
 | NAV-006 | Explore minimal route rendering | P2 |

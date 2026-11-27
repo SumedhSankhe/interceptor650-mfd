@@ -20,17 +20,19 @@ g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include firmware/test/
 ./simulator/build/telemetry_test
 g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include firmware/test/navigation_test.cpp -o simulator/build/navigation_test
 ./simulator/build/navigation_test
+g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include firmware/test/recording_test.cpp -o simulator/build/recording_test
+./simulator/build/recording_test
 g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Ifirmware/include simulator/fixture.cpp -o simulator/build/fixture
 python3 simulator/test_render.py
 python3 simulator/server.py
 ```
 
-Open http://127.0.0.1:8765 in a desktop browser. Select a display mode and independent telemetry and navigation fixtures. Choose a maneuver, distance in meters and optional roundabout exit. Distance and temperature display units are independent. Set elapsed time to 3000 ms to expire active guidance. The navigation session control replays either a reconnect awaiting a packet or a reconnect with a fresh packet. The server is loopback-only. Stop with Ctrl-C.
+Open http://127.0.0.1:8765 in a desktop browser. Select a display mode and independent telemetry and navigation fixtures. Choose a maneuver, distance in meters and optional roundabout exit. Distance and temperature display units are independent. Set elapsed time to 3000 ms to expire active guidance. The navigation session control replays either a reconnect awaiting a packet or a reconnect with a fresh packet. The desktop ride diagnostics panel replays ignition, engine, storage and recovery scenarios against the C++ recorder. The panel uses in-memory synthetic rides. It is independent of the circular display and navigation controls. The server is loopback-only. Stop with Ctrl-C.
 
 ## Browser tests
 
 Build the fixture using the commands above, or use the native Windows build
-in the [Phase 1B verification record](../docs/verification-phase-1b.md). From the
+in the [Phase 1C verification record](../docs/verification-phase-1c.md). From the
 repository root with Node.js and npm installed:
 
 ```sh
@@ -47,7 +49,7 @@ if needed, or `SIMULATOR_TEST_PORT` to use another port. To test an already
 running local instance, set `SIMULATOR_USE_RUNNING_SERVER=1` and match its
 `server.py --port` value with `SIMULATOR_TEST_PORT` (default 18765 for an external server).
 
-Set `SIMULATOR_SCREENSHOTS` to a directory to regenerate the PNG evidence.
+Set `SIMULATOR_SCREENSHOTS` to a directory to regenerate the PNG evidence. See the [Phase 1C captures](screenshots/phase-1c/) for the diagnostics panel and counterclockwise roundabout.
 The [Phase 1B captures](screenshots/phase-1b/) and the [verification record](../docs/verification-phase-1b.md)
 show the tested states and visual observations. The original [V02 capture set](screenshots/browser/) is retained as historical evidence. The browser
 dependencies are only required to develop or run this test suite.
@@ -58,7 +60,9 @@ dependencies are only required to develop or run this test suite.
 - `firmware/test/telemetry_test.cpp`: deterministic assertion checks.
 - `firmware/include/mfd/navigation.hpp`: v1 packet validation, session ordering and monotonic freshness.
 - `firmware/test/navigation_test.cpp`: protocol vectors, lifecycle assertions and seeded malformed inputs.
-- `fixture.cpp` and `navigation_fixture.hpp`: deterministic mock inputs and JSON bridge.
+- `firmware/include/mfd/engine.hpp`, `recording.hpp`, `record_format.hpp` and `settings.hpp`: portable state, lifecycle, format and settings.
+- `firmware/host/`: filesystem and deterministic in-memory adapters.
+- `fixture.cpp`, `navigation_fixture.hpp` and `ride_fixture.hpp`: deterministic mock inputs and JSON bridge.
 - `render.py`: SVG viewport; navigation fixture and telemetry are independently selectable.
 - `server.py` and `index.html`: desktop-only HTTP bridge and controls.
 - `test_render.py`: 168 mode/fixture/unit combinations, invalid selectors and snapshot consistency.

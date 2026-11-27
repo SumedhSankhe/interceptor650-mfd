@@ -17,6 +17,17 @@ Photo-based estimates, not caliper-verified: outer diameter 54–55 mm; internal
 
 [Waveshare board documentation](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.43). Confirm exact board revision and presence of microSD/RTC before assuming features.
 
+## Ignition-powered design
+
+Use integrated module functions once the delivered revision and capabilities
+are confirmed. The final protected supply is ignition-switched. External
+circuitry is limited to electrical compatibility and automotive power
+protection. This design excludes a main backup battery, supercapacitor,
+external shutdown controller and custom shutdown circuitry. RTC backup is
+optional and deferred. The software assumes the supply can disappear
+without warning and recovers on the next boot. Card, RTC, regulator and
+cutoff behavior remain subject to bench verification.
+
 ## Deferred items
 
 - Adjustable current limiting for original Tripper powered test.

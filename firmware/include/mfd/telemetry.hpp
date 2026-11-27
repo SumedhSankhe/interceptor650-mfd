@@ -5,7 +5,7 @@
 #include <optional>
 
 namespace mfd {
-enum class Metric { Oil, Intake, Voltage };
+enum class Metric { Oil, Intake, Voltage, Rpm };
 enum class Source { None, Mock, Ecu, Adapter, Battery };
 enum class Quality { Missing, Valid, Simulated, Unsupported, Error, Stale };
 struct Reading {
@@ -26,7 +26,7 @@ public:
         if (numeric && (!std::isfinite(*reading.value) || reading.source == Source::None ||
             ((reading.source == Source::Mock) != (reading.quality == Quality::Simulated)))) return false;
         if (metric != Metric::Voltage && numeric && reading.source != Source::Mock && reading.source != Source::Ecu) return false;
-        if (numeric && *reading.value < (metric == Metric::Voltage ? 0.0 : -273.15)) return false;
+        if (numeric && *reading.value < ((metric == Metric::Voltage || metric == Metric::Rpm) ? 0.0 : -273.15)) return false;
         slot = reading;
         return true;
     }
@@ -39,7 +39,7 @@ public:
     }
     void disconnect() { readings_ = {}; }
 private:
-    std::array<Reading, 3> readings_{};
+    std::array<Reading, 4> readings_{};
 };
 inline double fahrenheit(double celsius) { return celsius * 1.8 + 32.0; }
 } // namespace mfd

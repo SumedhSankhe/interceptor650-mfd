@@ -6,7 +6,7 @@ Proposed modular design. [Requirements](requirements.md), [decision log](adr/REA
 
 ```mermaid
 flowchart TB
-    BIKE["Motorcycle accessory feed (unverified)"] --> FUSE["Fuse / reverse and transient protection"]
+    BIKE["Ignition-switched feed (verify)"] --> FUSE["Fuse / reverse and transient protection"]
     FUSE --> DC["Board-compatible regulated supply"]
     DC --> MCU["ESP32-S3 / display"]
     ECU["ECU"] --> IFACE["Verified read-only diagnostic interface"]
@@ -68,4 +68,20 @@ Telemetry sample: metric identifier, numeric value in canonical SI or volts, sou
 
 ## Power and storage
 
-Estimate power and thermal budgets with measured current at brightness extremes, boot and radio activity. No lithium battery required in initial design. Use append-only session records with version, units, source, time quality and validity; flush policy, filesystem and storage wear to be measured. Retain completed files on abrupt ignition-off; do not log proprietary provider road names, speed limits or route geometry. GPS logging is optional and restricted to permitted independent data.
+Prefer functions integrated into the verified Waveshare ESP32-S3 AMOLED module. An ignition-switched interface supplies the device. External circuits provide necessary compatibility and automotive protection. The approved design excludes a main backup battery, supercapacitor, external shutdown controller and custom shutdown circuitry. Optional RTC backup is deferred. Measure power and thermal behavior during boot, radio use and brightness extremes.
+
+One recorder runs on a dedicated storage worker and accepts snapshots
+independently of navigation. It opens a session at boot or once storage is
+available, samples available data through engine stops and ECU gaps, and
+requests sync periodically and on a fresh running-to-stopped observation.
+A stop may reflect a stall or kill switch. The supply can disappear without
+an observed stop. The future embedded adapter should receive snapshots
+through the bounded logging queue. Storage calls belong outside acquisition,
+display and navigation tasks.
+
+Recovery inspects valid prefixes of interrupted logs without reopening them
+for append. A new boot allocates a different session ID while retained files
+are present. The v1 recording contains no location or proprietary provider
+content. Future GPS logging remains opt-in and limited to permitted data.
+See the [ride recording format and lifecycle](protocol/ride-recording.md)
+and [storage test plan](verification.md).
