@@ -14,7 +14,7 @@ The expanded product includes optional Tripper-style phone-assisted turn-by-turn
 |---|---|---|
 | Original Tripper diagnosis | P0 | Teardown and passive checks complete; powered test pending |
 | Oil temperature, intake air temperature, charging voltage | P0 | Candidate diagnostic data; not verified on target ECU |
-| ESP32 display and mock telemetry | P0 | Board selected; exact revision and fit pending |
+| ESP32 display and mock telemetry | P0 | Host model and simulator available; exact board revision and fit pending |
 | iOS navigation and hybrid display | P1 | Research/design; provider selection unresolved |
 | Local ride logging | P1 | Storage/clock validation pending |
 | GPS-tagged ride data, GPX and analytics | P2 | Proposed |
@@ -53,13 +53,14 @@ The design is provisional. ECU protocol, input connector, module pinout, power c
 | [Verification plan](docs/verification.md) | Test matrix and hardware qualification |
 | [Diagnostic log](docs/diagnostics.md) | Original PCB and harness measurements |
 | [Hardware BOM](hardware/README.md) | Parts and deferred purchases |
+| [Host simulator](simulator/README.md) | Run the prototype and view rendered snapshots |
 | [Firmware](firmware/README.md) | Candidate PIDs and implementation notes |
 | [Roadmap](docs/roadmap.md) | Milestones, dependencies and issue mapping |
 | [Agent guidance](AGENTS.md) | Development constraints |
 
 ## Development
 
-Clone the repository and start with the requirements and architecture. Phase 0 is documentation only: no compilable firmware, board-specific configuration, paid navigation SDK or CI build is present. Phase 1 begins with the delivered board's vendor example and a host-side mock. Record framework/toolchain versions and reproducible commands before adding CI. Hardware tests require the physical device and are not covered by host tests.
+Clone the repository and start with the requirements and architecture. The Phase 0 documentation baseline is followed by a portable C++17 telemetry model and a local SVG display simulator. See [host build and test instructions](simulator/README.md). No board-specific configuration, embedded firmware executable, paid navigation SDK or CI build is present. The hardware branch of Phase 1 begins with the delivered board's vendor example. Record framework/toolchain versions and reproducible commands before adding CI. Hardware tests require the physical device and are not covered by host tests.
 
 Track work in [GitHub Issues](https://github.com/SumedhSankhe/interceptor650-mfd/issues). Use reviewable pull requests and preserve empirical records.
 
