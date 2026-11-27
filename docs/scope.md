@@ -51,3 +51,7 @@ A phone computes routes and tracks progress; the ESP32 renders a compact normali
 Phase 0: requirements, architecture, ADRs, research and validation plan. Phase 1: protected original Tripper diagnostics, ESP32 bring-up and mock telemetry. Phase 2: verified live telemetry, mounting and protected power. Phase 3: phone-assisted navigation and hybrid display. Phase 4: logging/analytics and optional enhancements. Research can run in parallel; implementation remains gated on actual hardware and provider verification.
 
 Out of initial scope: full offline routing, safety-critical instrument replacement, ECU tuning, and automatic control of motorcycle systems.
+
+## Phase 0 design elaboration
+
+See [requirements and acceptance criteria](requirements.md), [architecture](architecture.md), [navigation provider research](research/navigation.md), [BLE protocol proposal](protocol/navigation-ble.md), [decision records](adr/README.md) and [verification plan](verification.md). Provider selection is open: Google Navigation SDK commercial-use policy and Apple Maps external-display restrictions require clearance. Prioritize open-source routing feasibility and provider-free mock navigation before choosing an implementation. The original P0 telemetry priorities remain unchanged.
