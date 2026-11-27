@@ -2,7 +2,7 @@ const { mkdir } = require('node:fs/promises');
 const path = require('node:path');
 const { expect, test } = require('@playwright/test');
 
-const displayPath = '/display.svg';
+const displayPath = '/snapshot.json';
 const displaySelector = '#display';
 const labels = {
   mode: 'Display mode',
@@ -22,12 +22,17 @@ async function openSimulator(page, action = () => page.goto('/')) {
   await action();
   await expect(page.getByRole('status')).toHaveText('Fixture rendered');
   const image = page.locator(displaySelector);
-  expect(await image.evaluate((element) => element.naturalWidth)).toBe(466);
+  await expect(image).toHaveJSProperty('naturalWidth', 466);
   const loaded = await response;
   expect(loaded.status()).toBe(200);
-  expect(loaded.headers()['content-type']).toContain('image/svg+xml');
-  await expect(image).toHaveJSProperty('currentSrc', loaded.url());
-  return { svg: await loaded.text(), url: loaded.url() };
+  expect(loaded.headers()['content-type']).toContain('application/json');
+  const { svg, diagnostics } = await loaded.json();
+  const url = await image.evaluate((element) => element.currentSrc);
+  expect(url).toMatch(/^blob:/);
+  expect(await page.evaluate(async (source) => (await fetch(source)).text(), url)).toBe(svg);
+  await expect(image).toHaveAttribute('data-sequence', String(diagnostics.sequence));
+  await expect(page.locator('#ride-details')).toHaveAttribute('data-sequence', String(diagnostics.sequence));
+  return { svg, url, diagnostics };
 }
 
 async function select(page, name, value) {
@@ -254,16 +259,16 @@ test('clears obsolete guidance, replays a new session, and observes the timeout 
   checkText((await select(page, 'scenario', 'disconnected')).svg, ['400 m', 'MISSING'], ['108°C']);
 });
 
-async function ride(page, scenario, fields) {
-  const response = page.waitForResponse((result) => {
-    const url = new URL(result.url());
-    return url.pathname === '/ride.json' && url.searchParams.get('scenario') === scenario;
-  });
-  await page.getByLabel('Ride scenario').selectOption(scenario);
-  expect((await response).status()).toBe(200);
+async function checkDiagnostics(page, fields) {
   for (const [field, value] of Object.entries(fields)) {
     await expect(page.locator('#ride-' + field)).toHaveText(String(value));
   }
+}
+
+async function ride(page, scenario, fields) {
+  const display = await openSimulator(page, () => page.getByLabel('Ride scenario').selectOption(scenario));
+  await checkDiagnostics(page, fields);
+  return display;
 }
 
 test('records one ignition session across engine stops, restarts, ECU and phone gaps', async ({ page }) => {
@@ -283,8 +288,8 @@ test('records one ignition session across engine stops, restarts, ECU and phone 
   await select(page, 'mode', 'hybrid');
   const display = await select(page, 'nav', 'disconnected');
   checkText(display.svg, ['DISCONNECTED', '108°C', '14.2V'], ['400 m']);
-  await ride(page, 'phone-independent', { engine: 'running', session: 1, records: 7 });
-  await expect(page.locator(displaySelector)).toHaveJSProperty('currentSrc', display.url);
+  const disconnected = await ride(page, 'phone-independent', { engine: 'running', session: 1, records: 7 });
+  expect(disconnected.svg).toBe(display.svg);
   await saveEvidence(page, 'ride-without-phone');
 });
 
@@ -301,4 +306,73 @@ test('reports storage failure, resumes writing, and starts a new session after a
     recovery: 'Truncated tail; previous session interrupted', recovered_records: 2,
   });
   await saveEvidence(page, 'ride-power-recovery');
+});
+
+test('replays one integrated timeline for rendering, recording, failures and reboot', async ({ page }) => {
+  await openSimulator(page);
+  const frame = async (step) => openSimulator(page,
+    () => page.getByLabel('Replay step').selectOption(String(step)));
+  const initial = await openSimulator(page,
+    () => page.getByLabel('Simulation mode').selectOption('timeline'));
+  checkText(initial.svg, ['95°C', '12.6V', 'TELEMETRY']);
+  expect(initial.diagnostics).toMatchObject({ oil_c: 95, voltage_v: 12.6, rpm: 0, session: 1 });
+  await saveEvidence(page, 'runtime-telemetry');
+  await openSimulator(page, () => page.getByRole('button', { name: 'Next replay step' }).click());
+  await expect(page.getByLabel('Replay step')).toHaveValue('1');
+  await checkDiagnostics(page, { engine: 'running', session: 1, records: 2 });
+  await select(page, 'mode', 'hybrid');
+
+  const hybrid = await frame(4);
+  checkText(hybrid.svg, ['ROUNDABOUT · EXIT 2', '99°C', '14.1V']);
+  expect(hybrid.diagnostics).toMatchObject({ oil_c: 99, voltage_v: 14.1, engine: 'running', phone: 'connected' });
+  await checkGeometry(page, hybrid);
+  await saveEvidence(page, 'runtime-hybrid');
+
+  const stall = await frame(5);
+  checkText(stall.svg, ['100°C', '12.6V', 'ROUNDABOUT · EXIT 2']);
+  await checkDiagnostics(page, { rpm: 0, engine: 'stopped', recording: 'recording', session: 1, sync_requests: 1 });
+  await saveEvidence(page, 'runtime-stall');
+  await frame(6);
+  await checkDiagnostics(page, { engine: 'running', session: 1 });
+
+  const ecu = await frame(7);
+  checkText(ecu.svg, ['MISSING', '12.6V', 'ROUNDABOUT · EXIT 2'], ['100°C']);
+  expect(ecu.diagnostics).toMatchObject({ oil_c: null, voltage_v: 12.6, engine: 'unknown', ecu: 'disconnected' });
+  await saveEvidence(page, 'runtime-ecu-gap');
+
+  const phone = await frame(8);
+  checkText(phone.svg, ['DISCONNECTED', '103°C', '14.1V'], ['400 m']);
+  await checkDiagnostics(page, { phone: 'disconnected', engine: 'running', session: 1 });
+  await saveEvidence(page, 'runtime-phone-gap');
+
+  await frame(13);
+  await checkDiagnostics(page, { engine: 'stopped', queue_depth: 4, queue_peak: 4, dropped_samples: 1, session: 1 });
+  await saveEvidence(page, 'runtime-saturation');
+
+  const degraded = await frame(14);
+  checkText(degraded.svg, ['DISCONNECTED', 'MISSING', '12.6V'], ['400 m']);
+  await checkDiagnostics(page, { recording: 'degraded', engine: 'unknown', ecu: 'disconnected', phone: 'disconnected' });
+  await saveEvidence(page, 'runtime-degraded');
+  await frame(15);
+  await checkDiagnostics(page, { recording: 'recording', session: 1 });
+
+  await frame(16);
+  const reboot = await frame(17);
+  checkText(reboot.svg, ['DISCONNECTED', 'MISSING'], ['14.1V', '400 m']);
+  await checkDiagnostics(page, { engine: 'unknown', session: 2, settings: 'restored', elapsed_ms: 0 });
+  expect(reboot.diagnostics.recovery).toContain('Truncated tail');
+  expect(reboot.diagnostics.recovered_records).toBeGreaterThan(0);
+  await expect(page.getByRole('button', { name: 'Next replay step' })).toBeDisabled();
+  await saveEvidence(page, 'runtime-recovery');
+});
+
+test('keeps integrated replay and diagnostics usable on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 280, height: 760 });
+  await openSimulator(page);
+  await openSimulator(page, () => page.getByLabel('Simulation mode').selectOption('timeline'));
+  await openSimulator(page, () => page.getByLabel('Replay step').selectOption('4'));
+  await expect(page.getByRole('button', { name: 'Next replay step' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(280);
+  await checkDiagnostics(page, { engine: 'running', session: 1 });
+  await saveEvidence(page, 'runtime-replay-narrow');
 });

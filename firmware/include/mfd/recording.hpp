@@ -41,6 +41,19 @@ struct RecordingStatus {
     StorageResult last_error = StorageResult::Ok;
 };
 
+struct RecordingSample {
+    std::uint64_t created_ms = 0;
+    TelemetryReadings readings{};
+    EngineState engine = EngineState::Unknown;
+    bool ecu_connected = false;
+    Timestamp timestamp{};
+};
+
+struct RecordingWork {
+    std::optional<RecordingSample> sample;
+    std::optional<std::uint64_t> sync_ms;
+};
+
 // One instance per boot. Invoke on the recording worker, outside acquisition and rendering.
 class Recorder {
 public:
@@ -57,17 +70,34 @@ public:
         const bool stopped = status_.engine == EngineState::Running && engine == EngineState::Stopped;
         status_.engine = engine;
 
+        RecordingWork work;
         if (stopped || !last_sample_ || now - *last_sample_ >= intervals_.sample_ms) {
             last_sample_ = now;
+            work.sample = RecordingSample{now, telemetry.snapshot(now), engine, ecu_connected, timestamp};
+        }
+        if (stopped || now - last_sync_ >= intervals_.sync_ms) work.sync_ms = now;
+        consume(work);
+    }
+
+    // Integrated callers schedule once on the state owner and hand owned work to this worker.
+    void consume(const RecordingWork &work) {
+        if (finishing_) return;
+        if (work.sample && work.sample->created_ms >= last_tick_) {
+            const auto &sample = *work.sample;
+            update_clock(sample.created_ms);
+            status_.engine = sample.engine;
             append_failed_ = !prepare() || !append(record_format::sample(
-                *status_.session, status_.elapsed_ms, timestamp, engine, ecu_connected,
-                status_.storage_errors, telemetry, now));
+                *status_.session, status_.elapsed_ms, sample.timestamp, sample.engine,
+                sample.ecu_connected, status_.storage_errors, sample.readings));
             if (!append_failed_) {
                 ++status_.records;
                 if (!sync_failed_) status_.state = RecordingState::Recording;
             }
         }
-        if (stopped || now - last_sync_ >= intervals_.sync_ms) synchronize(now);
+        if (work.sync_ms && *work.sync_ms >= last_tick_) {
+            last_tick_ = *work.sync_ms;
+            synchronize(*work.sync_ms);
+        }
     }
 
     // Explicit close is available to a host/operator. Ignition loss has no close callback.

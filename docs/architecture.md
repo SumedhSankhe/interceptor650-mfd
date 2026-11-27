@@ -27,13 +27,13 @@ flowchart TB
     GATT --> N["Navigation service"]
     T --> S["Application state reducer"]
     N --> S
-    S --> UI["Single-owner LVGL renderer"]
-    T --> Q["Bounded logging queue"]
-    N -. "Opt-in permitted metadata only" .-> Q
+    S --> SNAP["Latest application snapshot"]
+    SNAP --> UI["Single-owner renderer"]
+    S --> Q["Bounded queue of owned recording work"]
     Q --> STORE["Local session writer"]
-    CLOCK["Monotonic / optional wall clock"] --> T
-    CLOCK --> N
-    CLOCK --> STORE
+    STORE -->|Status and recovery| S
+    SETTINGS["Preferences worker"] --> S
+    CLOCK["Monotonic / optional wall clock"] --> S
 ```
 
 | Component | Responsibility | Boundary |
@@ -70,14 +70,12 @@ Telemetry sample: metric identifier, numeric value in canonical SI or volts, sou
 
 Prefer functions integrated into the verified Waveshare ESP32-S3 AMOLED module. An ignition-switched interface supplies the device. External circuits provide necessary compatibility and automotive protection. The approved design excludes a main backup battery, supercapacitor, external shutdown controller and custom shutdown circuitry. Optional RTC backup is deferred. Measure power and thermal behavior during boot, radio use and brightness extremes.
 
-One recorder runs on a dedicated storage worker and accepts snapshots
-independently of navigation. It opens a session at boot or once storage is
-available, samples available data through engine stops and ECU gaps, and
-requests sync periodically and on a fresh running-to-stopped observation.
-A stop may reflect a stall or kill switch. The supply can disappear without
-an observed stop. The future embedded adapter should receive snapshots
-through the bounded logging queue. Storage calls belong outside acquisition,
-display and navigation tasks.
+The portable single-owner runtime publishes snapshots and schedules owned
+recording work. Its fixed FIFO drops new samples at capacity, while an
+ordered sync marker still reaches the recorder. The recorder belongs to
+a storage worker. The deterministic host schedules these boundaries without
+threads. Acquisition and rendering have no storage calls. A supply cutoff
+may occur without an observed engine stop. See the [runtime contract](runtime.md).
 
 Recovery inspects valid prefixes of interrupted logs without reopening them
 for append. A new boot allocates a different session ID while retained files

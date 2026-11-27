@@ -35,12 +35,14 @@ public:
             record_format::parse(fields[1], temperature) && temperature <= 1 &&
             record_format::parse(fields[2], distance) && distance <= 1 &&
             record_format::parse(fields[3], mode) && mode <= 2) {
+            restored_ = true;
             settings_ = {static_cast<TemperatureUnit>(temperature), static_cast<DistanceUnit>(distance),
                          static_cast<DisplayMode>(mode)};
         }
     }
 
     Settings get() const { return settings_; }
+    bool restored() const { return restored_; }
 
     bool save(Settings next) {
         const auto temperature = static_cast<unsigned>(next.temperature);
@@ -58,5 +60,6 @@ public:
 private:
     SettingsStorage &storage_;
     Settings settings_;
+    bool restored_ = false;
 };
 } // namespace mfd

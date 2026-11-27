@@ -89,7 +89,7 @@ inline std::string prefix(std::uint64_t id, char kind) {
 }
 
 inline std::string sample(std::uint64_t id, std::uint64_t elapsed, Timestamp timestamp, EngineState engine,
-                          bool ecu_connected, std::uint64_t errors, const Telemetry &telemetry, std::uint64_t now) {
+                          bool ecu_connected, std::uint64_t errors, const TelemetryReadings &readings) {
     std::ostringstream out;
     out.imbue(std::locale::classic());
     out << std::setprecision(std::numeric_limits<double>::max_digits10)
@@ -99,7 +99,7 @@ inline std::string sample(std::uint64_t id, std::uint64_t elapsed, Timestamp tim
     out << ',' << (clock_known ? (timestamp.quality == ClockQuality::Trusted ? "trusted" : "unverified") : "unknown")
         << ',' << name(engine) << ',' << (ecu_connected ? 1 : 0) << ',' << errors;
     for (const auto metric : {Metric::Oil, Metric::Intake, Metric::Voltage, Metric::Rpm}) {
-        auto reading = telemetry.get(metric, now);
+        auto reading = readings[static_cast<unsigned>(metric)];
         if (!ecu_connected && (metric == Metric::Rpm || reading.source == Source::Ecu)) reading = {};
         out << ',';
         if (reading.value) out << *reading.value;

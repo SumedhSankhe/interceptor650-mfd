@@ -16,7 +16,7 @@ The expanded product includes optional Tripper-style phone-assisted turn-by-turn
 | Oil temperature, intake air temperature, charging voltage | P0 | Candidate diagnostic data; not verified on target ECU |
 | ESP32 display and mock telemetry | P0 | Host model and simulator available; exact board revision and fit pending |
 | iOS navigation and hybrid display | P1 | Host decoder and hybrid simulator; phone transport and provider pending |
-| Local ride logging | P1 | Host recording and recovery available; card and clock validation pending |
+| Local ride logging | P1 | Integrated host recording, recovery and replay available; card and clock validation pending |
 | GPS-tagged ride data, GPX and analytics | P2 | Proposed |
 | Phone-independent routing | P3 | Exploratory; not an initial deliverable |
 
@@ -47,6 +47,7 @@ The design is provisional. ECU protocol, input connector, module pinout, power c
 | [Product scope](docs/scope.md) | Proposed features and priorities |
 | [Requirements](docs/requirements.md) | Traceable acceptance criteria and dependencies |
 | [System architecture](docs/architecture.md) | Power, software, data paths and failure behavior |
+| [Application runtime](docs/runtime.md) | State ownership, recording backpressure and boot orchestration |
 | [Navigation research](docs/research/navigation.md) | Provider comparison and licensing gates |
 | [BLE protocol proposal](docs/protocol/navigation-ble.md) | Versioned phone/display interface |
 | [Architecture decisions](docs/adr/README.md) | Decisions, alternatives, unresolved gates |

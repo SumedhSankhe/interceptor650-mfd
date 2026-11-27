@@ -54,3 +54,16 @@ session continues through engine stops, ECU outages and phone disconnects.
 Missing final records are inferred after reboot, and wall clock is optional.
 **Gate:** ENG-001, LOG-001/003/004, V02 and V09. See the
 [recording contract](../protocol/ride-recording.md).
+
+## ADR-010 — Single-owner application state with bounded storage work
+
+**Status:** Phase 1D host implementation for review. **Context:** Independent
+fixtures and mutable model reads could disagree when integration introduced
+worker delays. **Decision:** Serialize source events in a portable reducer,
+publish latest-value snapshots, and transfer owned samples through a
+fixed-capacity FIFO. Preserve stop sync through a tail barrier even when
+the sample is dropped. **Consequences:** The owner has no storage I/O.
+Workers preserve the schedule's capture order, and the host exercises
+delay without adding threads. Archives and volume identity remain
+storage-adapter concerns. **Gate:** RT-001/002, V02/V05/V09, Issues #4,
+#6 and #7. See the [runtime contract](../runtime.md).

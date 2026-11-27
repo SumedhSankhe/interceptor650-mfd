@@ -24,6 +24,13 @@ Status: proposed Phase 0 baseline, 2026-11-26. Stable IDs and priorities origina
 | APP-001 | P2 | Analyze local exported sessions; preserve units and missing data | Future test design |
 | NAV-007 | P3 | Establish feasibility of phone-independent guidance and extra hardware | Research only |
 
+## Integrated host runtime
+
+| ID | Acceptance criterion | Verification |
+|---|---|---|
+| RT-001 | Publish coherent owned snapshots with source freshness, connection generations, engine state, settings and storage status. Keep phone and ECU failure independent. | V02, V05; #4/#7 |
+| RT-002 | Schedule bounded recording work independently of acquisition and rendering. Report drops and preserve a stop sync request under backpressure. Recover archived sessions without requiring storage for initial display. | V02, V09; #6 |
+
 ## Non-functional
 
 | ID | Acceptance criterion | Verification |

@@ -1,9 +1,10 @@
 """Local-only simulator HTTP bridge. Run after building the C++ fixture."""
 import argparse
+import json
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
-from render import FIXTURE, HERE, render
+from render import FIXTURE, HERE, render_snapshot, runtime_snapshot
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -14,24 +15,35 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
-        elif url.path == "/ride.json":
-            scenario = parse_qs(url.query, keep_blank_values=True).get("scenario", ["ignition"])[0]
-            result = subprocess.run([str(FIXTURE), "--ride", scenario], capture_output=True)
-            if result.returncode == 0:
-                self.respond(result.stdout, "application/json")
-            else:
-                self.send_error(400 if result.returncode == 2 else 500)
-        elif url.path == "/display.svg":
+        elif url.path in ("/snapshot.json", "/display.svg", "/ride.json"):
             params = parse_qs(url.query, keep_blank_values=True)
+            value = lambda key, default: params.get(key, [default])[0]
             try:
-                svg = render(*(params.get(k, [v])[0] for k, v in zip(
-                    ("mode", "scenario", "nav", "unit", "maneuver", "distance",
-                     "exit_number", "age", "distance_unit", "connection"),
-                    ("telemetry", "normal", "active", "C", "right", "400", "2", "0", "metric", "current"))))
+                if url.path == "/ride.json":
+                    # Historical endpoint. The browser uses the combined snapshot endpoint.
+                    data = runtime_snapshot(ride=value("scenario", "ignition"))
+                else:
+                    data = runtime_snapshot(
+                        mode=value("mode", "telemetry"), scenario=value("scenario", "normal"),
+                        nav=value("nav", "active"), unit=value("unit", "C"),
+                        maneuver=value("maneuver", "right"), distance=value("distance", "400"),
+                        exit_number=value("exit_number", "2"), age=value("age", "0"),
+                        distance_unit=value("distance_unit", "metric"),
+                        connection=value("connection", "current"), ride=value("ride", "ignition"),
+                        replay=value("replay", "fixtures"), step=value("step", "0"))
             except ValueError:
                 self.send_error(400)
+                return
+            except subprocess.CalledProcessError:
+                self.send_error(500)
+                return
+
+            if url.path == "/display.svg":
+                self.respond(render_snapshot(data).encode(), "image/svg+xml")
             else:
-                self.respond(svg.encode(), "image/svg+xml")
+                payload = data["diagnostics"] if url.path == "/ride.json" else {
+                    "svg": render_snapshot(data), "diagnostics": data["diagnostics"]}
+                self.respond(json.dumps(payload).encode(), "application/json")
         else:
             self.send_error(404)
 
