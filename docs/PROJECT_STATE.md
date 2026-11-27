@@ -1,6 +1,6 @@
 # Project state — hardware-validation checkpoint
 
-Last updated: 2026-11-26 (Pacific time). This is a dated checkpoint, not a substitute for inspecting live repository state.
+Last updated: 2026-11-27 (Pacific time). This is a dated checkpoint, not a substitute for inspecting live repository state.
 
 ## Current milestone
 
@@ -20,7 +20,7 @@ Phase 1D hosted PR CI was independently checked successful (run 45948186300); Co
 
 ## Product and decisions
 
-Target: 2023 US-market Royal Enfield Interceptor 650, repurposing the nonfunctional OEM Tripper enclosure while retaining factory instruments. Initial priority: trustworthy oil temperature, intake air temperature and charging-voltage telemetry; navigation/hybrid modes and local recording supplement it. Actual ECU/protocol/PID availability is unknown. No ECU writes or actuator commands. No fueling changes based solely on inferred temperatures.
+Target: 2023 US-market Royal Enfield Interceptor 650, repurposing the nonfunctional OEM Tripper enclosure while retaining factory instruments. Initial priority: trustworthy oil temperature, intake air temperature and charging-voltage telemetry; navigation/hybrid modes and local recording supplement it. ECU label cross-reference identifies Bosch ME17.9.71 (Euro 4 family) with high confidence; diagnostic transport, pinout and PID availability remain unverified. No ECU writes or actuator commands. No fueling changes based solely on inferred temperatures.
 
 - Portable C++17 domain and single-owner application runtime; value-owned snapshots, independent source lifecycles, bounded recording FIFO (four items provisional), newest sample dropped when full, ordered synchronization barrier retained. No embedded task implementation yet.
 - Ignition-switched protected power, minimal additional hardware; no main battery, supercapacitor, external shutdown controller or custom shutdown circuitry. Required electrical adaptation and protection are exceptions. RTC backup optional/deferred.
@@ -31,7 +31,7 @@ Target: 2023 US-market Royal Enfield Interceptor 650, repurposing the nonfunctio
 
 ## Hardware status
 
-See [BOM and enclosure notes](../hardware/README.md) and [original Tripper diagnostic readings](diagnostics.md). Ordered Waveshare ESP32-S3 1.43-inch AMOLED module, variable 3–24 V supply, mini grabbers, extended probes. Exact board revision, RTC, SD, power capabilities and fit remain unverified. Adjustable voltage supply is not established to be current-limited. Original Tripper passive tests did not establish a definitive failure. No powered test yet. No ECU adapter selected.
+See [BOM and enclosure notes](../hardware/README.md) and [original Tripper diagnostic readings](diagnostics.md). Ordered Waveshare ESP32-S3 1.43-inch AMOLED module, variable 3–24 V supply, mini grabbers, extended probes. Exact board revision, RTC, SD, power capabilities and fit remain unverified. Adjustable voltage supply is not established to be current-limited. Original Tripper passive tests did not establish a definitive failure. No powered test yet. No ECU adapter selected. Owner photographed the ECU label on 2026-11-27: RE2A050P1EU4003, RAC00312/a. External cross-references indicate Bosch ME17.9.71, HW 0261S18895, SW 10SW052973; this is not direct diagnostic readback. Evidence and remaining gates: [#2 ECU compatibility](https://github.com/SumedhSankhe/interceptor650-mfd/issues/2#issuecomment-7224263970).
 
 ## Next work: Phase 2A
 
@@ -40,7 +40,7 @@ See [BOM and enclosure notes](../hardware/README.md) and [original Tripper diagn
 3. Measure module and Tripper enclosure with calipers, test-fit without cutting; consider mounting, cable clearance, lens, sealing, heat and vibration.
 4. Original Tripper bench test only with independently verified polarity and suitable current limiting, via original harness. Record input current/voltage and rail readings; stop if anomalous. No direct 3.3 V injection. If equipment is unsuitable, defer this test without delaying safe USB bring-up.
 5. With exact hardware known, plan board-specific build and LVGL adaptation of existing runtime. Measure actual RAM/CPU/boot/current/latency; validate scheduling, bounded resource use and storage recovery.
-6. Identify motorcycle diagnostic connector, electrical interface and protocol before selecting adapter. Verify read-only supported PIDs, including candidate 010C (RPM), 015C (oil), 010F (IAT), 0142 (ECU voltage); distinguish adapter voltage from battery-terminal voltage.
+6. Photograph motorcycle diagnostic connector (mating face and wire-entry side); verify pinout, electrical interface and protocol before selecting adapter. CAN is a candidate, not yet validated. Verify read-only supported PIDs, including candidate 010C (RPM), 015C (oil), 010F (IAT), 0142 (ECU voltage); distinguish adapter voltage from battery-terminal voltage.
 7. Design and validate protected ignition-switched DC/DC supply, enclosure weather protection, physical power-cut recovery and road-test readiness. Never connect motorcycle 12 V directly to the Waveshare board.
 
 Record exact procedures, raw measurements, photos where appropriate, results and unresolved gates in the relevant issue and verification record. Do not publish identifiers or personal information.
