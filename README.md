@@ -16,7 +16,7 @@ The expanded product includes optional Tripper-style phone-assisted turn-by-turn
 | Oil temperature, intake air temperature, charging voltage | P0 | Candidate diagnostic data; not verified on target ECU |
 | ESP32 display and mock telemetry | P0 | Host model and simulator available; exact board revision and fit pending |
 | iOS navigation and hybrid display | P1 | Host decoder and hybrid simulator; phone transport and provider pending |
-| Local ride logging | P1 | Storage/clock validation pending |
+| Local ride logging | P1 | Host recording and recovery available; card and clock validation pending |
 | GPS-tagged ride data, GPX and analytics | P2 | Proposed |
 | Phone-independent routing | P3 | Exploratory; not an initial deliverable |
 

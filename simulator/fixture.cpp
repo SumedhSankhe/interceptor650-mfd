@@ -1,10 +1,12 @@
 #include "mfd/telemetry.hpp"
 #include "navigation_fixture.hpp"
+#include "ride_fixture.hpp"
 #include <iostream>
 #include <string>
 #include <iomanip>
 using namespace mfd;
 int main(int argc, char** argv) {
+    if (argc == 3 && std::string_view(argv[1]) == "--ride") return simulator::ride_fixture(argv[2]) ? 0 : 2;
     if (argc != 9) return 2;
     std::array<std::uint32_t, 6> inputs{};
     for (std::size_t i = 0; i < inputs.size(); ++i) {

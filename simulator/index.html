@@ -16,6 +16,13 @@ select,input{display:block;width:100%;margin-top:6px;padding:10px;color:#edf2f7;
 input:disabled{opacity:.55}
 small{color:#a9b6c3}
 #status{min-height:24px}
+#ride{border-top:1px solid #536270;margin-top:24px;padding-top:20px}
+#ride h2{font-size:20px;margin:0 0 16px}
+#ride-scenario{max-width:360px}
+#ride-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:14px;margin:20px 0 0}
+#ride-details div{background:#242e38;padding:10px 12px;border-radius:6px;min-width:0}
+#ride-details dt{font-size:13px;color:#c4d0db}
+#ride-details dd{margin:4px 0 0;overflow-wrap:anywhere}
 </style>
 <main><h1>Interceptor 650 MFD · desktop simulator</h1><p>466 × 466 viewport · synthetic data only · no vehicle connection</p>
 <section><img id="display" width="466" height="466" alt="Simulated circular instrument"><form id="controls">
@@ -34,7 +41,31 @@ small{color:#a9b6c3}
 <label>Temperature units<select name="unit"><option>C</option><option>F</option></select></label>
 <label>Distance units<select name="distance_unit"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label>
 </div>
-<small>A roundabout exit of 0 means unknown. Each change replays a deterministic session.</small><p id="status" role="status"></p></form></section></main>
+<small>A roundabout exit of 0 means unknown. Each change replays a deterministic session.</small><p id="status" role="status"></p></form></section>
+<aside id="ride" aria-labelledby="ride-title"><h2 id="ride-title">Simulated ride recording</h2>
+<label for="ride-scenario">Ride scenario</label>
+<select id="ride-scenario">
+<option value="ignition">Ignition on · engine stopped</option><option value="start">Engine start</option><option value="running">Normal running</option>
+<option value="stall">Engine stall</option><option value="restart">Restart after stall</option><option value="kill-switch">Kill-switch stop</option>
+<option value="ecu-loss">ECU communication loss</option><option value="ecu-reconnect">ECU reconnection</option><option value="power-loss">Power loss and reboot</option>
+<option value="storage-failure">Storage full</option><option value="storage-recovery">Storage write recovers</option><option value="phone-independent">Recording without phone</option>
+</select>
+<dl id="ride-details">
+<div><dt>RPM</dt><dd id="ride-rpm">—</dd></div>
+<div><dt>RPM quality</dt><dd id="ride-rpm_quality">—</dd></div>
+<div><dt>Engine state</dt><dd id="ride-engine">—</dd></div>
+<div><dt>Recording state</dt><dd id="ride-recording">—</dd></div>
+<div><dt>Session ID</dt><dd id="ride-session">—</dd></div>
+<div><dt>Elapsed (ms)</dt><dd id="ride-elapsed_ms">—</dd></div>
+<div><dt>Records written</dt><dd id="ride-records">—</dd></div>
+<div><dt>Sync requests</dt><dd id="ride-sync_requests">—</dd></div>
+<div><dt>Storage errors</dt><dd id="ride-storage_errors">—</dd></div>
+<div><dt>Last storage error</dt><dd id="ride-last_error">—</dd></div>
+<div><dt>Recovery outcome</dt><dd id="ride-recovery">—</dd></div>
+<div><dt>Recovered records</dt><dd id="ride-recovered_records">—</dd></div>
+</dl>
+<p id="ride-error" aria-live="polite" hidden></p>
+</aside></main>
 <script>
 const form = document.querySelector('#controls');
 const display = document.querySelector('#display');
@@ -57,4 +88,27 @@ display.addEventListener('error', () => status.textContent = 'Unable to render f
 form.addEventListener('change', update);
 form.addEventListener('submit', (event) => event.preventDefault());
 update();
+
+const rideScenario = document.querySelector('#ride-scenario');
+const rideError = document.querySelector('#ride-error');
+let rideRequest = 0;
+async function updateRide() {
+  const request = ++rideRequest;
+  const fields = document.querySelectorAll('#ride-details dd');
+  rideError.hidden = true;
+  for (const field of fields) field.textContent = '—';
+  try {
+    const response = await fetch('/ride.json?' + new URLSearchParams({ scenario: rideScenario.value }));
+    if (!response.ok) throw new Error('Diagnostics request failed');
+    const data = await response.json();
+    if (request !== rideRequest) return;
+    for (const field of fields) field.textContent = data[field.id.slice(5)] ?? '—';
+  } catch {
+    if (request !== rideRequest) return;
+    rideError.textContent = 'Unable to load ride diagnostics';
+    rideError.hidden = false;
+  }
+}
+rideScenario.addEventListener('change', updateRide);
+updateRide();
 </script></html>

@@ -18,7 +18,7 @@ Separate telemetry providers, display rendering, connection state and logging. M
 | Intake air temperature | 010F | Availability unverified |
 | ECU module voltage | 0142 | Availability unverified |
 | Adapter voltage | ATRV | Measures adapter supply, not necessarily battery terminals |
-| RPM | 010C | Optional |
+| Internal engine RPM | 010C | Candidate; compatibility with the target ECU is unverified |
 | MAP | 010B | Optional |
 | Engine load | 0104 | Optional |
 
@@ -38,4 +38,4 @@ Navigation provider remains undecided; see [research](../docs/research/navigatio
 
 ## Host implementation
 
-See [simulator](../simulator/README.md) for strict C++17 compilation, portable telemetry tests, the desktop fixture and actual rendered snapshots. The simulator exercises the v1 navigation decoder with synthetic frames. See the [V02 and V05 Phase 1B record](../docs/verification-phase-1b.md) for host evidence. Physical BLE and hardware verification remain open.
+See [simulator](../simulator/README.md) for strict C++17 compilation, portable telemetry tests, the desktop fixture and actual rendered snapshots. The simulator exercises the v1 navigation decoder with synthetic frames. The portable recorder uses RPM, an explicit ECU connectivity signal and a monotonic clock. Host file and memory storage adapters exercise recording and settings independently of navigation. See the [recording contract](../docs/protocol/ride-recording.md). See the [V02 and V05 Phase 1B record](../docs/verification-phase-1b.md) for host evidence. Physical BLE and hardware verification remain open.

@@ -1,6 +1,13 @@
 """Deterministic host renderer checks; requires compiled fixture."""
 import itertools
+import json
+import threading
 import unittest
+from http.server import ThreadingHTTPServer
+from urllib.error import HTTPError
+from urllib.request import urlopen
+
+from server import Handler
 from render import HERE, MODES, SCENARIOS, NAV_STATES, render
 
 
@@ -50,6 +57,48 @@ class RenderTests(unittest.TestCase):
                            ("hybrid", ("hybrid", "normal", "active")),
                            ("degraded", ("hybrid", "stale", "disconnected"))]:
             self.assertEqual(render(*args), (HERE / "screenshots" / (name + ".svg")).read_text(encoding="utf-8"))
+
+
+class RideDiagnosticsTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        cls.server_thread = threading.Thread(target=cls.server.serve_forever)
+        cls.server_thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server_thread.join()
+        cls.server.server_close()
+
+    def diagnostics(self, query):
+        with urlopen(f"http://127.0.0.1:{self.server.server_port}/ride.json?{query}", timeout=5) as response:
+            self.assertEqual(response.headers.get_content_type(), "application/json")
+            self.assertEqual(response.headers["Cache-Control"], "no-store")
+            return json.load(response)
+
+    def test_ride_lifecycle(self):
+        stopped = self.diagnostics("scenario=ignition")
+        self.assertEqual((stopped["rpm"], stopped["engine"], stopped["session"]), (0, "stopped", 1))
+        stall = self.diagnostics("scenario=stall")
+        self.assertEqual((stall["session"], stall["sync_requests"]), (1, 1))
+        loss = self.diagnostics("scenario=ecu-loss")
+        self.assertEqual((loss["rpm"], loss["engine"], loss["session"]), (None, "unknown", 1))
+        reboot = self.diagnostics("scenario=power-loss")
+        self.assertEqual((reboot["session"], reboot["recovered_records"]), (2, 2))
+        self.assertIn("Truncated tail", reboot["recovery"])
+        storage = self.diagnostics("scenario=storage-failure")
+        self.assertEqual((storage["recording"], storage["last_error"]), ("degraded", "full"))
+        resumed = self.diagnostics("scenario=storage-recovery")
+        self.assertEqual((resumed["recording"], resumed["session"]), ("recording", 1))
+
+    def test_unknown_ride_scenario(self):
+        for query in ("scenario=bad", "scenario="):
+            with self.subTest(query=query), self.assertRaises(HTTPError) as response:
+                self.diagnostics(query)
+            self.assertEqual(response.exception.code, 400)
+            response.exception.close()
 
 
 if __name__ == "__main__":

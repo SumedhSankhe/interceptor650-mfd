@@ -1,5 +1,6 @@
 """Local-only simulator HTTP bridge. Run after building the C++ fixture."""
 import argparse
+import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit, parse_qs
 from render import FIXTURE, HERE, render
@@ -13,6 +14,13 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
+        elif url.path == "/ride.json":
+            scenario = parse_qs(url.query, keep_blank_values=True).get("scenario", ["ignition"])[0]
+            result = subprocess.run([str(FIXTURE), "--ride", scenario], capture_output=True)
+            if result.returncode == 0:
+                self.respond(result.stdout, "application/json")
+            else:
+                self.send_error(400 if result.returncode == 2 else 500)
         elif url.path == "/display.svg":
             params = parse_qs(url.query, keep_blank_values=True)
             try:

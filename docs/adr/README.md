@@ -29,3 +29,28 @@ Status: proposed Phase 0 decisions, pending owner review. Supersede with new ADR
 ## ADR-007 — Exercise navigation packets in the host simulator
 
 **Status:** proposed for Phase 1B review. **Context:** Static SVG fixtures left v1 decoding and stale guidance unverified. **Alternatives:** render synthetic state directly or build a hardware transport first. **Decision:** replay deterministic v1 snapshots, link events and a supplied monotonic clock through the portable decoder and model. Keep telemetry independent and use GitHub Actions to exercise the host build and browser. **Consequences:** HTTP requests can reproduce any fixture without shared server state. The runtime remains local with only the Python standard library and C++ fixture. **Gate:** V02/V05 host review, then V06/V07 transport and provider validation. See the [v1 host interpretation](../protocol/navigation-ble.md#host-interpretation-for-protocol-review).
+
+## ADR-008 — Ignition-switched power and software recovery
+
+**Status:** owner-approved Phase 1C design. **Context:** The motorcycle supply
+can disappear without a final ECU update. **Decision:** Prefer capabilities
+integrated into the verified Waveshare module. Use an ignition-switched supply
+and limit external circuitry to compatibility and automotive protection.
+Exclude a main battery, supercapacitor, external shutdown controller and
+custom shutdown circuitry. Defer optional RTC backup. **Consequences:** Assume
+abrupt power loss at any time. Use host-tested recovery and qualify the
+actual power/storage behavior independently. **Gate:** NFR-005, V09 and V10,
+Issue #6.
+
+## ADR-009 — One recoverable ride session per ignition-powered boot
+
+**Status:** Phase 1C host implementation for review. **Context:** Zero RPM can
+mean several things, and an ECU failure provides no stop observation.
+**Decision:** Use fresh RPM for engine state and use the power lifecycle for
+session boundaries. An observed running-to-stopped transition requests
+best-effort sync. Use versioned, checksummed CSV records with a readable
+prefix and separate, replace-on-change settings. **Consequences:** The same
+session continues through engine stops, ECU outages and phone disconnects.
+Missing final records are inferred after reboot, and wall clock is optional.
+**Gate:** ENG-001, LOG-001/003/004, V02 and V09. See the
+[recording contract](../protocol/ride-recording.md).

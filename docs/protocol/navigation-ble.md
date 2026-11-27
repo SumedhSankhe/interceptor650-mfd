@@ -53,6 +53,10 @@ Publish complete snapshots on material changes and approximately every second wh
 
 The frame format and the published test vectors are unchanged.
 
+The simulator draws the roundabout counterclockwise for the initial US target.
+Direction is a renderer choice. The frame retains the maneuver and optional
+exit number, and a future renderer preference can select clockwise circulation.
+
 ## Deferred fields
 
 Road name, ETA and remaining trip distance can be added as separately versioned bounded metadata only after provider terms and usability review; no provider-owned metadata is persisted. No GPX geometry or arbitrary text in v1. For forward compatibility unknown versions are rejected, not guessed. No MCU-to-ECU bridging.
