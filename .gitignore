@@ -11,3 +11,4 @@ __pycache__/
 
 # Host simulator build artifacts
 simulator/build/
+simulator/node_modules/

@@ -1,16 +1,18 @@
 """Host-only SVG renderer. No external services or live inputs."""
 import json
+import os
 import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+FIXTURE = HERE / "build" / ("fixture.exe" if os.name == "nt" else "fixture")
 MODES = ("telemetry", "navigation", "hybrid")
 SCENARIOS = ("normal", "stale", "unsupported", "disconnected")
 NAV_STATES = ("active", "rerouting", "disconnected", "stale")
 
 
 def readings(scenario, unit):
-    return json.loads(subprocess.check_output([str(HERE / "build" / "fixture"), scenario, unit], text=True))
+    return json.loads(subprocess.check_output([str(FIXTURE), scenario, unit], text=True))
 
 
 def render(mode="telemetry", scenario="normal", nav="active", unit="C"):
