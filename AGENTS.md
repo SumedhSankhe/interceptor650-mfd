@@ -9,3 +9,9 @@
 - Preserve original motorcycle instruments and electronics. Use protected power, validated mounting and sealing.
 - Keep personal identifiers, VINs, credentials and private information out of this public repository.
 - No license has been selected. Do not add one without owner approval.
+
+## Session continuity
+
+- At the start of each agent session, read [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) and [docs/HANDOFF.md](docs/HANDOFF.md). Reconcile the dated checkpoint against current main, open PRs, issues and the relevant specifications before acting.
+- Preserve the current milestone and feature freeze unless the owner authorizes a change. Use feature branches and reviewed PRs for implementation. Do not merge implementation PRs without explicit owner approval.
+- Update the checkpoint after merged milestones, material decisions or new blockers; record evidence in the authoritative diagnostic or verification documents. Keep the shared record technical and free of private chat history.
